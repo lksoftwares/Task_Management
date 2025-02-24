@@ -14,9 +14,9 @@ namespace Task_Management.Model
         public bool roleStatus { get; set; } = true;
 
         [JsonPropertyName("createdAt")]
-        public DateTime? createdAt { get; set; } 
+        public string? createdAt { get; set; } 
 
         [JsonPropertyName("updatedAt")]
-        public DateTime? updatedAt { get; set; } 
+        public string? updatedAt { get; set; }
     }
 }
