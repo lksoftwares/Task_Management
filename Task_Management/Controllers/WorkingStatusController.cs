@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
+using System.Data.Common;
 using Task_Management.Classes;
 using Task_Management.Model;
 
@@ -11,8 +12,9 @@ namespace Task_Management.Controllers
     [ApiController]
     public class WorkingStatusController : ControllerBase
     {
+        Connection _Connection = new Connection();
         ApiResponse Resp = new ApiResponse();
-
+        Validation validation = new Validation();
 
         private ConnectionClass _connection;
         DataAccess _dc = new DataAccess();
@@ -20,8 +22,9 @@ namespace Task_Management.Controllers
         public WorkingStatusController(ConnectionClass connection)
         {
             _connection = connection;
-            Connection.Connect();
             Connection.ConnectionStr = _connection.GetSqlConnection().ConnectionString;
+            Connection.Connect();
+
         }
         [HttpGet]
         [Route("GetWorkingStatus")]
@@ -29,9 +32,11 @@ namespace Task_Management.Controllers
         {
             try
             {
-                string query = $"select * from Daily_Working_Txn ";
-                var connection = new Connection();
-                var result = connection.bindmethod(query);
+                string query = $"select DW.*,U.userName from Daily_Working_Txn DW join User_Mst U ON  DW.userId = U.userID ";
+                //var connection = new Connection();
+                //Connection.Connect();
+
+                var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
                 if (Table == null)
                 {
@@ -51,11 +56,12 @@ namespace Task_Management.Controllers
                     {
                         txnId = Convert.ToInt32(row["txnId"]),
                         userId = Convert.ToInt32(row["userId"]),
-
+                        workingNote = row["workingNote"].ToString(),
                         workingDesc = row["workingDesc"].ToString(),
-                        workingDate = Convert.ToDateTime(row["workingDate"]),
-                        createdAt = Convert.ToDateTime(row["createdAt"]),
-                        updatedAt = Convert.ToDateTime(row["updatedAt"])
+                        userName = row["userName"].ToString(),
+                        workingDate = Convert.ToDateTime(row["workingDate"]).ToString("dd-MM-yyyy HH:mm:ss"),
+                        createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+                        updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
 
 
                     });
@@ -88,12 +94,11 @@ namespace Task_Management.Controllers
         {
             try
             {
-
                 insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
 
 
 
-                if (String.IsNullOrEmpty(workingSatatusModel.workingDesc))
+                if (validation.CheckNullValues(workingSatatusModel.workingDesc))
                 {
                     Resp.statusCode = StatusCodes.Status404NotFound;
                     Resp.message = $"Description Can't be Blank Or Null";
@@ -101,86 +106,32 @@ namespace Task_Management.Controllers
                     return StatusCode(StatusCodes.Status204NoContent, Resp);
                 }
 
-               
-                if (workingSatatusModel.txnId != null && !string.IsNullOrEmpty(workingSatatusModel.txnId.ToString()) && workingSatatusModel.txnId > 0)
+
+                _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
+                {
+
+                    entity = workingSatatusModel,
+                    tableName = "Daily_Working_Txn",
+                   
+
+                }) ;
+
+
+                //if (_query.QueryErrorMessage != null )
+                if (!validation.CheckNullValues(_query.QueryErrorMessage) )
 
                 {
-                    var txnExistsQuery = $"SELECT COUNT(*) FROM Daily_Working_Txn WHERE txnId = {workingSatatusModel.txnId}";
-                    int txnExists =
-                        (int)(Connection.ExecuteScalar(txnExistsQuery));
-
-                    if (txnExists == 0)
-                    {
-                        Resp.statusCode = StatusCodes.Status404NotFound;
-                        Resp.message = $"Transaction ID does not exist.";
-                        return StatusCode(StatusCodes.Status404NotFound, Resp);
-                    }
-                    var duplicacyParameter = new CheckDuplicacyPerameter
-                    {
-                        tableName = "Daily_Working_Txn",
-                        fields = new[] { "userId", "workingDate" },
-                        values = new[] { workingSatatusModel.userId.ToString(),workingSatatusModel.workingDate.ToString() },
-                        idField = "txnId",
-                        idValue = workingSatatusModel.txnId.ToString()
-                    };
-
-                    if (_dc.CheckDuplicate(duplicacyParameter))
-                    {
-                        Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                        Resp.message = $" Already Working Reported ";
-                        Resp.dup = true;
-                        return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
-                    }
-
-
-
-                    workingSatatusModel.updatedAt = DateTime.Now;
-                    _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
-                    {
-                        entity = workingSatatusModel,
-                        tableName = "Daily_Working_Txn",
-                        id = (int)workingSatatusModel.txnId,
-                        idPropertyName = "txnId"
-
-                    });
-                    // _query = _dc.InsertOrUpdateEntity(role, "Role_Mst", (int)role.roleId, "roleId");
-                    Resp.message = "Daily Working Updated Successfully";
+                    Resp.message = _query.QueryErrorMessage;
                 }
                 else
                 {
-
-                    var duplicacyParameter = new CheckDuplicacyPerameter
-                    {
-                        tableName = "Daily_Working_Txn",
-                        fields = new[] { "userId", "workingDate" },
-                        values = new[] { workingSatatusModel.userId.ToString(), workingSatatusModel.workingDate.ToString()}
-                    };
-
-                    if (_dc.CheckDuplicate(duplicacyParameter))
-                    {
-                        Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                        Resp.message = $"Already Working Reported";
-                        Resp.dup = true;
-
-
-                        return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
-                    }
-
-
-                    _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
-                    {
-                        entity = workingSatatusModel,
-                        tableName = "Daily_Working_Txn",
-
-                    });
-
-
-
+                    Resp.message = $"Daily Working Added Successfully";
+                }
                     // _query = _dc.InsertOrUpdateEntity(role, "Role_Mst", -1);
 
-                    Resp.message = $"Daily Working Added Successfully";
+                 
 
-                }
+                
                 Resp.statusCode = StatusCodes.Status200OK;
 
                 Resp.isSuccess = true;

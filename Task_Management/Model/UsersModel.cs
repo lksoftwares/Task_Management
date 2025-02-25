@@ -6,6 +6,9 @@ namespace Task_Management.Model
     {
         [JsonPropertyName("userId")]
         public int? userId { get; set; }
+        [JsonPropertyName("roleId")]
+
+        public int? roleId { get; set; }
 
         [JsonPropertyName("userName")]
         public string? userName { get; set; } 

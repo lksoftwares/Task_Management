@@ -2,7 +2,7 @@
 
 namespace Task_Management.Classes
 {
-    public class LetterCase
+    public class Validation
     {
         
             public string ConvertLetterCase(LetterCasePerameter letterCasePerameter)
@@ -36,9 +36,19 @@ namespace Task_Management.Classes
 
                 return transformedValue;
             }
-        
+        public bool CheckNullValues(string columnName)
+        {
+            if (columnName == null || string.IsNullOrEmpty(columnName.ToString()))
+            {
+                return true;
+            }
+            return false;
+        }
+
 
     }
+ 
+
 
     public class LetterCasePerameter
     {

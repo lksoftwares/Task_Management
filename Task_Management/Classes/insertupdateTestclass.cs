@@ -38,7 +38,8 @@ namespace Task_Management.Classes
                     {
                         continue;
                     }
-
+                    if (property.Name == "updateFlag") 
+                        continue;
                     if (property.PropertyType == typeof(IFormFile))
                     {
                         // Handle file upload separately
@@ -113,5 +114,6 @@ namespace Task_Management.Classes
         public int id { get; set; } = -1;
         public string idPropertyName { get; set; } = null;
         public string imgFolderpath { get; set; } = null;
+
     }
 }

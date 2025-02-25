@@ -18,5 +18,7 @@ namespace Task_Management.Model
 
         [JsonPropertyName("updatedAt")]
         public string? updatedAt { get; set; }
+        public bool updateFlag { get; set; } = false;
+
     }
 }

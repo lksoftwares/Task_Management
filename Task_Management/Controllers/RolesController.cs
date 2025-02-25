@@ -13,9 +13,9 @@ namespace Task_Management.Controllers
     [ApiController]
     public class RolesController : ControllerBase
     {
-          //private ResponseModel Resp = new ResponseModel();
+        Connection _Connection = new Connection();
         ApiResponse Resp = new ApiResponse();
-
+        Validation validation = new Validation();
      
         private ConnectionClass _connection;
         DataAccess _dc = new DataAccess();
@@ -23,11 +23,11 @@ namespace Task_Management.Controllers
         public RolesController(ConnectionClass connection)
         {
             _connection = connection;
-             Connection.Connect();
              Connection.ConnectionStr = _connection.GetSqlConnection().ConnectionString;
+            Connection.Connect();
+
 
         }
-
         [HttpGet]
         [Route("GetAllRole")]
         public IActionResult GetAllRole()
@@ -35,9 +35,10 @@ namespace Task_Management.Controllers
             try
             {
                 string query = $"select * from Role_Mst ORDER BY roleName ASC";
-                var connection = new  Connection();
-                var result =  connection.bindmethod(query);
+                
+                var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
+
                 if (Table == null)
                 {
                     Resp.statusCode = StatusCodes.Status200OK;
@@ -47,7 +48,7 @@ namespace Task_Management.Controllers
                     return Ok(Resp);
 
                 }
-               
+
 
                 var RoleList = new List<RolesModel>();
                 foreach (DataRow row in Table.Rows)
@@ -57,10 +58,9 @@ namespace Task_Management.Controllers
                         roleId = Convert.ToInt32(row["roleId"]),
                         roleName = row["roleName"].ToString(),
                         roleStatus = Convert.ToBoolean(row["roleStatus"]),
-                        createdAt = Convert.ToDateTime(row["createdAt"]).ToString("MM-dd-yyyy HH:mm:ss"),
-                        updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("MM-dd-yyyy HH:mm:ss")
-                        //createdAt = Convert.ToDateTime(row["createdAt"]),
-                        //updatedAt = Convert.ToDateTime(row["updatedAt"])
+                        createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+                        updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
+                      
 
 
                     });
@@ -70,7 +70,6 @@ namespace Task_Management.Controllers
 
 
 
-        // DateTime.Now.ToString("MM-dd-yyyy HH:mm:ss");
 
         Resp.statusCode = StatusCodes.Status200OK;
                 Resp.message = $"Role fetched successfully ";
@@ -99,26 +98,23 @@ namespace Task_Management.Controllers
             {
                
                 insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
-               
 
 
-                if (String.IsNullOrEmpty(role.roleName))
+              
+                if (validation.CheckNullValues(role.roleName))
                 {
-                    Resp.statusCode = StatusCodes.Status404NotFound;
+                    Resp.statusCode = StatusCodes.Status204NoContent;
                     Resp.message = $"RoleName Can't be Blank Or Null";
 
                     return StatusCode(StatusCodes.Status204NoContent, Resp);
-                }
 
-                if (role.roleName != null || !string.IsNullOrEmpty(role.roleName))
-                {
-                    role.roleName = new LetterCase().ConvertLetterCase(new LetterCasePerameter
-                    {
-                        caseType = "uppercase",
-                        column = role.roleName
-                    });
                 }
-                if (role.roleId != null && !string.IsNullOrEmpty(role.roleId.ToString()) && role.roleId > 0)
+                role.roleName = validation.ConvertLetterCase(new LetterCasePerameter
+                {
+                    caseType = "uppercase",
+                    column = role.roleName
+                });
+                if (!validation.CheckNullValues(role.roleName) && role.roleId > 0 && role.updateFlag == true)
 
                 {
                     var roleExistsQuery = $"SELECT COUNT(*) FROM Role_Mst WHERE roleId = {role.roleId}";
@@ -158,8 +154,17 @@ namespace Task_Management.Controllers
                         idPropertyName = "roleId"
 
                     });
+
+                    if (_query.QueryErrorMessage != null)
+                    {
+                        Resp.message = _query.QueryErrorMessage;
+                    }
+                    else
+                    {
+                        Resp.message = "Role Name Updated Successfully";
+
+                    }
                     // _query = _dc.InsertOrUpdateEntity(role, "Role_Mst", (int)role.roleId, "roleId");
-                    Resp.message = "RoleName Updated Successfully";
                 }
                 else
                 {
@@ -193,155 +198,18 @@ namespace Task_Management.Controllers
 
 
                     // _query = _dc.InsertOrUpdateEntity(role, "Role_Mst", -1);
-
-                    Resp.message = $"RoleName Added Successfully";
-                   
-                }
-                Resp.statusCode = StatusCodes.Status200OK;
-
-                Resp.isSuccess = true;
-
-                return StatusCode(StatusCodes.Status200OK, Resp);
-
-            }
-            catch (Exception ex)
-            {
-
-                Resp.statusCode = StatusCodes.Status500InternalServerError;
-                Resp.message = ex.Message;
-
-
-                return StatusCode(StatusCodes.Status500InternalServerError, Resp);
-            }
-        }
-
-        [HttpPost]
-
-        [Route("AddRole")]
-        public IActionResult AddRole([FromBody] RolesModel role)
-        {
-            try
-            {
-
-                var duplicacyParameter = new CheckDuplicacyPerameter
-                {
-                    tableName = "Role_mst",
-                    fields = new[] { "roleName" },
-                    values = new[] { role.roleName }
-                };
-
-                if (_dc.CheckDuplicate(duplicacyParameter))
-                {
-                    Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                    Resp.message = $"RoleName already exists.";
-                    Resp.dup = true;
-
-                    return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
-                }
-                if (String.IsNullOrEmpty(role.roleName))
-                {
-                    Resp.statusCode = StatusCodes.Status404NotFound;
-                    Resp.message = $"RoleName Can't be Blank Or Null";
-
-                    return StatusCode(StatusCodes.Status204NoContent, Resp);
-                }
-
-
-                if (role.roleName != null || !string.IsNullOrEmpty(role.roleName))
-                {
-                    role.roleName = new LetterCase().ConvertLetterCase(new LetterCasePerameter
+                    if (_query.QueryErrorMessage!=null)
                     {
-                        caseType = "uppercase",
-                        column = role.roleName
-                    });
-                }
-
-
-
-
-                _query = _dc.InsertOrUpdateEntity(role, "Role_Mst", -1);
-
-                Resp.statusCode = StatusCodes.Status200OK;
-                Resp.message = $"RoleName Added Successfully";
-                Resp.isSuccess = true;
-
-                return StatusCode(StatusCodes.Status200OK, Resp);
-
-            }
-            catch (Exception ex)
-            {
-
-                Resp.statusCode = StatusCodes.Status500InternalServerError;
-                Resp.message = ex.Message;
-
-
-                return StatusCode(StatusCodes.Status500InternalServerError, Resp);
-            }
-        }
-
-        [HttpPut]
-        [Route("updateRole/{roleId}")]
-
-        public IActionResult UpdateRole(int roleId, [FromBody] RolesModel role)
-        {
-            try
-            {
-                var connection = new Connection();
-
-                var roleExists = $"SELECT COUNT(*) FROM Role_Mst WHERE roleId = {roleId} ";
-                int result = Convert.ToInt32(Connection.ExecuteScalar(roleExists));
-
-
-                if (result == 0)
-                {
-                    Resp.statusCode = StatusCodes.Status404NotFound;
-                    Resp.message = $"Role ID does not exist.";
-
-                    return StatusCode(StatusCodes.Status404NotFound, Resp);
-                }
-
-                var duplicacyParameter = new CheckDuplicacyPerameter
-                {
-                    tableName = "Role_Mst",
-                    fields = new[] { "roleName" },
-                    values = new[] { role.roleName },
-                    idField = "roleId",
-                    idValue = roleId.ToString()
-                };
-
-
-
-                if (_dc.CheckDuplicate(duplicacyParameter))
-                {
-                    Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                    Resp.message = $"RoleName already exists.";
-                    Resp.dup = true;
-
-                    return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
-
-                }
-                if (String.IsNullOrEmpty(role.roleName))
-                {
-                    Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                    Resp.message = $"RoleName Can't be Blank Or Null";
-
-                    return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
-
-                }
-             
-                if (role.roleName != null || !string.IsNullOrEmpty(role.roleName))
-                {
-                    role.roleName = new LetterCase().ConvertLetterCase(new LetterCasePerameter
+                        Resp.message = _query.QueryErrorMessage;
+                    }
+                    else
                     {
-                        caseType = "lowercase",
-                        column = role.roleName
-                    });
-                }
+                        Resp.message = $"RoleName Added Successfully";
+                    }
 
-                role.updatedAt = DateTime.Now.ToString();
-                _query = _dc.InsertOrUpdateEntity(role, "Role_Mst", roleId, "roleId");
+                }
                 Resp.statusCode = StatusCodes.Status200OK;
-                Resp.message = "RoleName Updated Successfully";
+
                 Resp.isSuccess = true;
 
                 return StatusCode(StatusCodes.Status200OK, Resp);
@@ -349,6 +217,7 @@ namespace Task_Management.Controllers
             }
             catch (Exception ex)
             {
+
                 Resp.statusCode = StatusCodes.Status500InternalServerError;
                 Resp.message = ex.Message;
 
@@ -381,7 +250,7 @@ namespace Task_Management.Controllers
 
                 }
                 // ------functionality not delete record due to exists in another table -----------------
-                string checkQuery = $"";
+                string checkQuery = $"SELECT COUNT(*) AS recordCount FROM UserRole_Mst WHERE roleId = {roleId}";
 
 
                 int roleIdInUser = Convert.ToInt32(Connection.ExecuteScalar(checkQuery));

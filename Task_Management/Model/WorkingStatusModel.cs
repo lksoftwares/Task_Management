@@ -14,13 +14,19 @@ namespace Task_Management.Model
         public string? workingDesc { get; set; }
 
         [JsonPropertyName("workingDate")]
-        public DateTime workingDate { get; set; } = DateTime.Now;
+        public string workingDate { get; set; } = DateTime.Now.ToString();
 
         [JsonPropertyName("createdAt")]
-        public DateTime? createdAt { get; set; }
+        public string? createdAt { get; set; }
 
         [JsonPropertyName("updatedAt")]
-        public DateTime? updatedAt { get; set; } 
+        public string? updatedAt { get; set; }
+        [JsonPropertyName("workingNote")]
+
+        public string? workingNote { get; set; }
+        [JsonPropertyName("userName")]
+        public string ? userName { get; set; }
+        public bool updateFlag { get; set; } = false;
 
     }
 }
