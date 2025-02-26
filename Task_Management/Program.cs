@@ -57,10 +57,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwagger();
     app.UseSwaggerUI();
 }
-ConnectionClass connectionClass = new 
-    ConnectionClass(builder.Configuration);
-LkDataConnection.Connection.ConnectionStr = connectionClass.GetSqlConnection().ConnectionString;
-LkDataConnection.Connection.Connect();
+
+Connection.ConnectionStr = new
+    ConnectionClass(builder.Configuration).GetSqlConnection().ConnectionString;
+Connection.Connect();
+//builder.Configuration["ConnectionStrings:Issuer"]
+Connection.ConnectionStr = new
+    ConnectionClass(builder.Configuration).GetSqlConnection().ConnectionString;
+Connection.Connect();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAuthentication();

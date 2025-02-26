@@ -16,16 +16,9 @@ namespace Task_Management.Controllers
         Validation validation = new Validation();
         EncryptDecrypt EncryptPassword = new EncryptDecrypt();
         Connection _Connection = new Connection();
-        private ConnectionClass _connection;
         DataAccess _dc = new DataAccess();
         SqlQueryResult _query = new SqlQueryResult();
-        public UserController(ConnectionClass connection)
-        {
-            _connection = connection;
-            Connection.ConnectionStr = _connection.GetSqlConnection().ConnectionString;
-            Connection.Connect();
-
-        }
+      
         [HttpGet]
         [Route("GetAllUsers")]
         public IActionResult GetAllUsers()
@@ -48,17 +41,17 @@ namespace Task_Management.Controllers
                 }
 
 
-                var RoleList = new List<UsersModel>();
+                var UserList = new List<UsersModel>();
                 foreach (DataRow row in Table.Rows)
                 {
-                    RoleList.Add(new UsersModel
+                    UserList.Add(new UsersModel
                     {
                         userId = Convert.ToInt32(row["userId"]),
                         userName = row["userName"].ToString(),
                         userPassword = row["userPassword"].ToString(),
                         userStatus = Convert.ToBoolean(row["userStatus"]),
-                        createdAt = Convert.ToDateTime(row["createdAt"]),
-                        updatedAt = Convert.ToDateTime(row["updatedAt"])
+                        createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+                        updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
 
 
                     }); ;
@@ -68,7 +61,7 @@ namespace Task_Management.Controllers
 
                 Resp.statusCode = StatusCodes.Status200OK;
                 Resp.message = $"User fetched successfully ";
-                Resp.apiResponse = RoleList;
+                Resp.apiResponse = UserList;
                 Resp.isSuccess = true;
 
                 return Ok(Resp);
@@ -168,22 +161,28 @@ namespace Task_Management.Controllers
             }
         }
 
-        [AllowAnonymous]
+    
         [HttpPost]
-        [Route("register")]
-        public IActionResult Register([FromForm] UsersModel user)
+        [Route("AddEditUser")]
+        public IActionResult AddEditUser([FromForm] UsersModel user)
         {
 
-            if (user.userPassword != null)
-            {
-
-                string hashedPassword = EncryptPassword.Encrypt("ABC", user.userPassword);
-
-                user.userPassword = hashedPassword;
-            }
-        ;
+        
             try
             {
+
+                if (user.userPassword != null)
+                {
+
+                    string hashedPassword = EncryptPassword.Encrypt("ABC", user.userPassword);
+
+                    user.userPassword = hashedPassword;
+                }
+                user.userName = validation.ConvertLetterCase(new LetterCasePerameter
+                {
+                    caseType = "titlecase",
+                    column = user.userName
+                });
                 insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
 
                 if (validation.CheckNullValues(user.userName)|| validation.CheckNullValues(user.userEmail)|| validation.CheckNullValues(user.userPassword))
@@ -194,32 +193,87 @@ namespace Task_Management.Controllers
                     return StatusCode(StatusCodes.Status204NoContent, Resp);
 
                 }
-                var duplicacyParameter = new CheckDuplicacyPerameter
+                if (!validation.CheckNullValues(user.userId.ToString()) && user.userId > 0 && user.updateFlag == true)
                 {
-                    tableName = "User_mst",
-                    fields = new[] { "userName","userEmail" },
-                    values = new[] { user.userName,user.userEmail }
-                };
+                    var userExistsQuery = $"SELECT COUNT(*) FROM User_Mst WHERE userId = {user.userId}";
+                    int userExists =
+                        (int)(Connection.ExecuteScalar(userExistsQuery));
 
-                if (_dc.CheckDuplicate(duplicacyParameter))
-                {
-                    Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                    Resp.message = $"User already exists.";
-                    Resp.dup = true;
+                    if (userExists == 0)
+                    {
+                        Resp.statusCode = StatusCodes.Status404NotFound;
+                        Resp.message = $"User ID does not exist.";
+                        return StatusCode(StatusCodes.Status404NotFound, Resp);
+                    }
 
+                    var duplicacyParameter = new checkDuplicacyper
+                    {
+                        tableName = "User_Mst",
+                        fields = new[] { "userName", "userEmail" },
+                        values = new[] { user.userName, user.userEmail },
+                        idField = "userId",
+                        idValue= user.userId.ToString()
+                    };
 
-                    return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
+                    if (validation.CheckDuplicate(duplicacyParameter))
+                    {
+                        Resp.statusCode = StatusCodes.Status208AlreadyReported;
+                        Resp.message = $"User Name User Email already exists.";
+                        Resp.dup = true;
+                        return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
+                    }
+
+                    user.updatedAt = DateTime.Now.ToString();
+                    _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
+                    {
+                        entity = user,
+                        tableName = "User_Mst",
+                        id = (int)user.userId,
+                        idPropertyName = "userId",
+                        
+
+                    });
+
+                    if (_query.QueryErrorMessage != null)
+                    {
+                        Resp.message = _query.QueryErrorMessage;
+                    }
+                    else
+                    {
+                        Resp.message = "User  Updated Successfully";
+
+                    }
+
                 }
-
-                _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
+                else
                 {
-                    entity = user,
-                    tableName = "user_Mst",
+                    var duplicacyParameter = new checkDuplicacyper
+                    {
+                        tableName = "User_Mst",
+                        fields = new[] { "userName", "userEmail" },
+                        values = new[] { user.userName, user.userEmail }
+                    };
 
-                });
+                    if (validation.CheckDuplicate(duplicacyParameter))
+                    {
+                        Resp.statusCode = StatusCodes.Status208AlreadyReported;
+                        Resp.message = $"User already exists.";
+                        Resp.dup = true;
 
+
+                        return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
+                    }
+
+
+                    _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
+                    {
+                        entity = user,
+                        tableName = "User_Mst",
+
+                    });
+                    Resp.message = "User Register successfully";
+                }
                 Resp.statusCode = StatusCodes.Status200OK;
-                Resp.message = "User Register successfully";
                 Resp.isSuccess = true;
 
                 return StatusCode(StatusCodes.Status200OK, Resp);
@@ -238,6 +292,59 @@ namespace Task_Management.Controllers
 
         }
 
+        [HttpDelete]
+        [Route("DeleteUser/{userId}")]
+        public IActionResult DeleteUser(int userId)
+        {
+            try
+            {
+                var userExists = $"SELECT COUNT(*) FROM User_Mst WHERE userId = {userId} ";
+                int result = Convert.ToInt32(Connection.ExecuteScalar(userExists));
+
+
+                if (result == 0)
+                {
+                    Resp.statusCode = StatusCodes.Status404NotFound;
+                    Resp.message = $"User ID does not exist.";
+
+                    return StatusCode(StatusCodes.Status404NotFound, Resp);
+
+                }
+               
+                string checkQuery = $"SELECT COUNT(*) AS recordCount FROM User_Role_Mst WHERE userId = {userId}";
+
+
+                int userIdInUser = Convert.ToInt32(Connection.ExecuteScalar(checkQuery));
+                if (userIdInUser > 0)
+                {
+                    Resp.statusCode = StatusCodes.Status208AlreadyReported;
+                    Resp.message = $"Can't delete Exists in another table";
+
+                    return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
+
+
+                }
+                string deleteUserQuery = $"Delete from User_Mst where userId='{userId}'";
+
+                Connection.ExecuteNonQuery(deleteUserQuery);
+                Resp.statusCode = StatusCodes.Status200OK;
+                Resp.message = "User Deleted successfully";
+                Resp.isSuccess = true;
+
+
+                return StatusCode(StatusCodes.Status200OK, Resp);
+
+
+            }
+            catch (Exception ex)
+            {
+                Resp.statusCode = StatusCodes.Status500InternalServerError;
+                Resp.message = ex.Message;
+
+
+                return StatusCode(StatusCodes.Status500InternalServerError, Resp);
+            }
+        }
 
     }
 }

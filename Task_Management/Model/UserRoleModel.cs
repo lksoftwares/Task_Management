@@ -4,8 +4,8 @@ namespace Task_Management.Model
 {
     public class UserRoleModel
     {
-        [JsonPropertyName("userroleId")]
-        public int? userroleId { get; set; }
+        [JsonPropertyName("userRoleId")]
+        public int? userRoleId { get; set; }
 
         [JsonPropertyName("userId")]
         public int? userId { get; set; }
@@ -14,15 +14,16 @@ namespace Task_Management.Model
         public int? roleId { get; set; }
 
         [JsonPropertyName("createdAt")]
-        public DateTime createdAt { get; set; } = DateTime.Now;
+        public string? createdAt { get; set; } 
 
         [JsonPropertyName("updatedAt")]
-        public DateTime updatedAt { get; set; } = DateTime.Now;
+        public string? updatedAt { get; set; } 
 
         [JsonPropertyName("userName")]
         public string? userName { get; set; }
 
         [JsonPropertyName("roleName")]
         public string? roleName { get; set; }
+        public bool? updateFlag { get; set; }
     }
 }

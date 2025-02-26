@@ -16,25 +16,17 @@ namespace Task_Management.Controllers
         ApiResponse Resp = new ApiResponse();
         Validation validation = new Validation();
 
-        private ConnectionClass _connection;
         DataAccess _dc = new DataAccess();
         SqlQueryResult _query = new SqlQueryResult();
-        public WorkingStatusController(ConnectionClass connection)
-        {
-            _connection = connection;
-            Connection.ConnectionStr = _connection.GetSqlConnection().ConnectionString;
-            Connection.Connect();
-
-        }
+      
         [HttpGet]
         [Route("GetWorkingStatus")]
         public IActionResult GetWorkingStatus()
         {
             try
             {
-                string query = $"select DW.*,U.userName from Daily_Working_Txn DW join User_Mst U ON  DW.userId = U.userID ";
-                //var connection = new Connection();
-                //Connection.Connect();
+                string query = $"select DW.*,U.userName from Daily_Working_Txn DW join User_Mst U ON  DW.userId = U.userID order by U.userName ";
+              
 
                 var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
@@ -89,8 +81,8 @@ namespace Task_Management.Controllers
 
         [HttpPost]
 
-        [Route("SaveWorkingStatus")]
-        public IActionResult SaveWorkingStatus([FromBody] WorkingStatusModel workingSatatusModel)
+        [Route("AddWorkingStatus")]
+        public IActionResult AddWorkingStatus([FromBody] WorkingStatusModel workingSatatusModel)
         {
             try
             {
@@ -170,20 +162,7 @@ namespace Task_Management.Controllers
                     return StatusCode(StatusCodes.Status404NotFound, Resp);
 
                 }
-                // ------functionality not delete record due to exists in another table -----------------
-                //string checkQuery = $"";
-
-
-                //int roleIdInUser = Convert.ToInt32(Connection.ExecuteScalar(checkQuery));
-                //if (roleIdInUser > 0)
-                //{
-                //    Resp.statusCode = StatusCodes.Status404NotFound;
-                //    Resp.message = $"Can't delete Exists in another table";
-
-                //    return StatusCode(StatusCodes.Status404NotFound, Resp);
-
-
-                //}
+             
                 string deleteRoleQuery = $"Delete from Daily_Working_Txn where txnId='{txnId}'";
 
                 Connection.ExecuteNonQuery(deleteRoleQuery);

@@ -9,6 +9,7 @@ using Task_Management.Model;
 
 namespace Task_Management.Controllers
 {
+  //  [Authorize]
     [Route("/[controller]")]
     [ApiController]
     public class RolesController : ControllerBase
@@ -17,17 +18,9 @@ namespace Task_Management.Controllers
         ApiResponse Resp = new ApiResponse();
         Validation validation = new Validation();
      
-        private ConnectionClass _connection;
         DataAccess _dc = new DataAccess();
        SqlQueryResult _query = new SqlQueryResult();
-        public RolesController(ConnectionClass connection)
-        {
-            _connection = connection;
-             Connection.ConnectionStr = _connection.GetSqlConnection().ConnectionString;
-            Connection.Connect();
-
-
-        }
+       
         [HttpGet]
         [Route("GetAllRole")]
         public IActionResult GetAllRole()
@@ -91,8 +84,8 @@ namespace Task_Management.Controllers
         }
         [HttpPost]
 
-        [Route("SaveRole")]
-        public IActionResult SaveRole([FromBody] RolesModel role)
+        [Route("AddEditRole")]
+        public IActionResult AddEditRole([FromBody] RolesModel role)
         {
             try
             {
@@ -111,10 +104,10 @@ namespace Task_Management.Controllers
                 }
                 role.roleName = validation.ConvertLetterCase(new LetterCasePerameter
                 {
-                    caseType = "uppercase",
+                    caseType = "titlecase",
                     column = role.roleName
                 });
-                if (!validation.CheckNullValues(role.roleName) && role.roleId > 0 && role.updateFlag == true)
+                if (!validation.CheckNullValues(role.roleId.ToString()) && role.roleId > 0 && role.updateFlag == true)
 
                 {
                     var roleExistsQuery = $"SELECT COUNT(*) FROM Role_Mst WHERE roleId = {role.roleId}";
@@ -128,7 +121,23 @@ namespace Task_Management.Controllers
                         return StatusCode(StatusCodes.Status404NotFound, Resp);
                     }
 
-                    var duplicacyParameter = new CheckDuplicacyPerameter
+                    //var duplicacyParameter = new CheckDuplicacyPerameter
+                    //{
+                    //    tableName = "Role_Mst",
+                    //    fields = new[] { "roleName" },
+                    //    values = new[] { role.roleName },
+                    //    idField = "roleId",
+                    //    idValue = role.roleId.ToString()
+                    //};
+
+                    //if (_dc.CheckDuplicate(duplicacyParameter))
+                    //{
+                    //    Resp.statusCode = StatusCodes.Status208AlreadyReported;
+                    //    Resp.message = $"RoleName already exists.";
+                    //    Resp.dup = true;
+                    //    return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
+                    //}
+                    var duplicacyParameter = new checkDuplicacyper
                     {
                         tableName = "Role_Mst",
                         fields = new[] { "roleName" },
@@ -137,7 +146,7 @@ namespace Task_Management.Controllers
                         idValue = role.roleId.ToString()
                     };
 
-                    if (_dc.CheckDuplicate(duplicacyParameter))
+                    if (validation.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
                         Resp.message = $"RoleName already exists.";
@@ -169,14 +178,31 @@ namespace Task_Management.Controllers
                 else
                 {
 
-                    var duplicacyParameter = new CheckDuplicacyPerameter
+                    //var duplicacyParameter = new CheckDuplicacyPerameter
+                    //{
+                    //    tableName = "Role_mst",
+                    //    fields = new[] { "roleName" },
+                    //    values = new[] { role.roleName }
+                    //};
+
+                    //if (_dc.CheckDuplicate(duplicacyParameter))
+                    //{
+                    //    Resp.statusCode = StatusCodes.Status208AlreadyReported;
+                    //    Resp.message = $"RoleName already exists.";
+                    //    Resp.dup = true;
+
+
+                    //    return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
+                    //}
+
+                    var duplicacyParameter = new checkDuplicacyper
                     {
                         tableName = "Role_mst",
                         fields = new[] { "roleName" },
                         values = new[] { role.roleName }
                     };
 
-                    if (_dc.CheckDuplicate(duplicacyParameter))
+                    if (validation.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
                         Resp.message = $"RoleName already exists.";
@@ -185,8 +211,6 @@ namespace Task_Management.Controllers
 
                         return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
                     }
-
-
 
                     _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
                     {
@@ -232,7 +256,7 @@ namespace Task_Management.Controllers
 
 
         [HttpDelete]
-        [Route("deleteRole/{roleId}")]
+        [Route("DeleteRole/{roleId}")]
         public IActionResult DeleteRole(int roleId)
         {
        try
@@ -249,17 +273,17 @@ namespace Task_Management.Controllers
                     return StatusCode(StatusCodes.Status404NotFound, Resp);
 
                 }
-                // ------functionality not delete record due to exists in another table -----------------
-                string checkQuery = $"SELECT COUNT(*) AS recordCount FROM UserRole_Mst WHERE roleId = {roleId}";
+             
+                string checkQuery = $"SELECT COUNT(*) AS recordCount FROM User_Role_Mst WHERE roleId = {roleId}";
 
 
                 int roleIdInUser = Convert.ToInt32(Connection.ExecuteScalar(checkQuery));
                 if (roleIdInUser > 0)
                 {
-                    Resp.statusCode = StatusCodes.Status404NotFound;
+                    Resp.statusCode = StatusCodes.Status208AlreadyReported;
                     Resp.message = $"Can't delete Exists in another table";
 
-                    return StatusCode(StatusCodes.Status404NotFound, Resp);
+                    return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
 
 
                 }
@@ -267,7 +291,7 @@ namespace Task_Management.Controllers
 
                  Connection.ExecuteNonQuery(deleteRoleQuery);
                 Resp.statusCode = StatusCodes.Status200OK;
-                Resp.message = "Role Name Deleted successfully";
+                Resp.message = "Role  Deleted successfully";
                 Resp.isSuccess = true;
 
 

@@ -46,24 +46,7 @@ namespace Task_Management.Classes
         {
             return _connection;
         }
-        public object ExecuteScalar(string query)
-        {
-            
-                SqlCommand command = new SqlCommand(query, _connection);
-                if (_connection.State != ConnectionState.Open)
-                {
-                    try
-                    {
-                        _connection.Open();
-                    }
-                    catch (Exception ex)
-                    {
-                        throw new Exception("Database connection failed.", ex);
-                    }
-                }
-                return command.ExecuteScalar();
-
-            }
+        
         
 
     }
