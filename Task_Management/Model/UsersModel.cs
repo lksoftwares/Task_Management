@@ -20,7 +20,7 @@ namespace Task_Management.Model
         public string? userPassword { get; set; } 
 
         [JsonPropertyName("userStatus")]
-        public bool userStatus { get; set; } = true;
+        public bool? userStatus { get; set; } 
 
         [JsonPropertyName("createdAt")]
         public string? createdAt { get; set; } 
@@ -28,6 +28,8 @@ namespace Task_Management.Model
         [JsonPropertyName("updatedAt")]
         public string? updatedAt { get; set; }
         public bool? updateFlag { get; set; } = false;
-
+        public string ? userRole { get; set; }
+        [JsonPropertyName("userRoleId")]
+        public int? userRoleId { get; set; }
     }
 }

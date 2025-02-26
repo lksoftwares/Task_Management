@@ -6,7 +6,7 @@ namespace Task_Management.Classes
 {
     public class insertupdateTestclass
     {
-        public SqlQueryResult InsertOrUpdateEntity(InsertUpdatePerameters insertUpdatePerameters)
+        public SqlQueryResult InsertOrUpdateEntity(InsertUpdatePerameter insertUpdatePerameters)
         {
             try
             {
@@ -107,7 +107,7 @@ namespace Task_Management.Classes
             return sqlCommand;
         }
     }
-    public class InsertUpdatePerameters
+    public class InsertUpdatePerameter
     {
         public object entity { get; set; }
         public string tableName { get; set; }

@@ -21,69 +21,71 @@ namespace Task_Management.Controllers
         DataAccess _dc = new DataAccess();
         SqlQueryResult _query = new SqlQueryResult();
 
-        [HttpGet]
-        [Route("GetAllUserRole")]
-        public IActionResult GetAllUserRole()
-        {
-            try
-            {
-                string query = $"select UR.*,r.roleName,U.userName from User_Role_Mst UR join User_Mst U ON UR.userId = U.userId join Role_Mst R ON UR.roleId = R.roleId order by UR.createdAt";
+        //[HttpGet]
+        //[Route("GetAllUserRole")]
+        //public IActionResult GetAllUserRole()
+        //{
+        //    try
+        //    {
+        //        string query = $"select UR.*,r.roleName,U.userName from User_Role_Mst UR join User_Mst U ON UR.userId = U.userId join Role_Mst R ON UR.roleId = R.roleId order by UR.createdAt";
 
-                var result = _Connection.bindmethod(query);
-                DataTable Table = result._DataTable;
+        //        var result = _Connection.bindmethod(query);
+        //        DataTable Table = result._DataTable;
 
-                if (Table == null)
-                {
-                    Resp.statusCode = StatusCodes.Status200OK;
-                    Resp.message = $"No Data Found ";
-                    Resp.isSuccess = true;
+        //        if (Table == null)
+        //        {
+        //            Resp.statusCode = StatusCodes.Status200OK;
+        //            Resp.message = $"No Data Found ";
+        //            Resp.isSuccess = true;
 
-                    return Ok(Resp);
+        //            return Ok(Resp);
 
-                }
-
-
-                var UserRoleList = new List<UserRoleModel>();
-                foreach (DataRow row in Table.Rows)
-                {
-                    UserRoleList.Add(new UserRoleModel
-                    {
-                        userRoleId= Convert.ToInt32(row["userRoleId"]),
-                        roleId = Convert.ToInt32(row["roleId"]),
-                        roleName = row["roleName"].ToString(),
-                        userId = Convert.ToInt32(row["userId"]),
-                        userName = row["userName"].ToString(),
-                        createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
-                        updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
+        //        }
 
 
+        //        var UserRoleList = new List<UserRoleModel>();
+        //        foreach (DataRow row in Table.Rows)
+        //        {
+        //            UserRoleList.Add(new UserRoleModel
+        //            {
+        //                userRoleId= Convert.ToInt32(row["userRoleId"]),
+        //                roleId = Convert.ToInt32(row["roleId"]),
+        //                roleName = row["roleName"].ToString(),
+        //                userId = Convert.ToInt32(row["userId"]),
+        //                userName = row["userName"].ToString(),
+        //                createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+        //                updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
 
-                    });
-                }
 
 
+        //            });
+        //        }
 
 
 
 
-                Resp.statusCode = StatusCodes.Status200OK;
-                Resp.message = $"User Role fetched successfully ";
-                Resp.apiResponse = UserRoleList;
-                Resp.isSuccess = true;
 
-                return Ok(Resp);
-            }
-            catch (Exception ex)
-            {
 
-                Resp.statusCode = StatusCodes.Status500InternalServerError;
-                Resp.message = ex.Message;
+        //        Resp.statusCode = StatusCodes.Status200OK;
+        //        Resp.message = $"User Role fetched successfully ";
+        //        Resp.apiResponse = UserRoleList;
+        //        Resp.isSuccess = true;
 
-                return StatusCode(StatusCodes.Status500InternalServerError, Resp);
+        //        return Ok(Resp);
+        //    }
+        //    catch (Exception ex)
+        //    {
 
-            }
+        //        Resp.statusCode = StatusCodes.Status500InternalServerError;
+        //        Resp.message = ex.Message;
 
-        }
+        //        return StatusCode(StatusCodes.Status500InternalServerError, Resp);
+
+        //    }
+
+        //}
+
+       
         [HttpPost]
         [Route("AddEditUserRole")]
         public IActionResult AddEditUserRole([FromBody] UserRoleModel userRole)
@@ -91,7 +93,7 @@ namespace Task_Management.Controllers
             try
             {
 
-                insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
+                //insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
 
 
 
@@ -117,18 +119,18 @@ namespace Task_Management.Controllers
                         Resp.message = $"UserRole ID does not exist.";
                         return StatusCode(StatusCodes.Status404NotFound, Resp);
                     }
-                    var duplicacyParameter = new checkDuplicacyper
+                    var duplicacyParameter = new CheckDuplicacyPerameter
                     {
                         tableName = "User_Role_Mst",
                         fields = new[] { "userId","roleId" },
                         values = new[] { userRole.userId.ToString(),userRole.roleId.ToString() },
                         idField = "userRoleId",
                         idValue = userRole.userRoleId.ToString(),
-                        OrAndFlag = true
+                        andFlag = true
                         
                     };
 
-                    if (validation.CheckDuplicate(duplicacyParameter))
+                    if (_dc.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
                         Resp.message = $" This Role Already Assigned To The Same User";
@@ -140,7 +142,7 @@ namespace Task_Management.Controllers
 
 
                     userRole.updatedAt = DateTime.Now.ToString();
-                    _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
+                    _query = _dc.InsertOrUpdateEntity(new InsertUpdatePerameters
                     {
                         entity = userRole,
                         tableName = "User_Role_Mst",
@@ -184,7 +186,7 @@ namespace Task_Management.Controllers
 
 
 
-                    _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
+                    _query = _dc.InsertOrUpdateEntity(new InsertUpdatePerameters
                     {
                         entity = userRole,
                         tableName = "User_Role_Mst",

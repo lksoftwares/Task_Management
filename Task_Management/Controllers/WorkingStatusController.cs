@@ -25,7 +25,7 @@ namespace Task_Management.Controllers
         {
             try
             {
-                string query = $"select DW.*,U.userName from Daily_Working_Txn DW join User_Mst U ON  DW.userId = U.userID order by U.userName ";
+                string query = $"select DW.*,U.userName from Daily_Working_Txn DW join User_Mst U ON  DW.userId = U.userID order by DW .workingDate DESC , U.userName ";
               
 
                 var result = _Connection.bindmethod(query);
@@ -86,7 +86,7 @@ namespace Task_Management.Controllers
         {
             try
             {
-                insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
+             //   insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
 
 
 
@@ -99,7 +99,7 @@ namespace Task_Management.Controllers
                 }
 
 
-                _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
+                _query = _dc.InsertOrUpdateEntity(new InsertUpdatePerameters
                 {
 
                     entity = workingSatatusModel,

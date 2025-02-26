@@ -14,7 +14,7 @@ namespace Task_Management.Controllers
     {
         ApiResponse Resp = new ApiResponse();
         Validation validation = new Validation();
-        EncryptDecrypt EncryptPassword = new EncryptDecrypt();
+        EncryptDecrypt EncryptDecryptPassword = new EncryptDecrypt();
         Connection _Connection = new Connection();
         DataAccess _dc = new DataAccess();
         SqlQueryResult _query = new SqlQueryResult();
@@ -25,9 +25,10 @@ namespace Task_Management.Controllers
         {
             try
             {
-                string query = $"select * from User_Mst ORDER BY userName ASC";
                
-                
+               
+                string query = $"SELECT     u.*,     r.roleId,     r.roleName FROM     User_Mst u JOIN     User_Role_Mst ur ON u.userId = ur.userId JOIN    Role_Mst r ON ur.roleId = r.roleId ORDER BY     u.userName ASC;";
+
                 var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
                 if (Table == null)
@@ -48,13 +49,17 @@ namespace Task_Management.Controllers
                     {
                         userId = Convert.ToInt32(row["userId"]),
                         userName = row["userName"].ToString(),
-                        userPassword = row["userPassword"].ToString(),
+                        userPassword = EncryptDecryptPassword.Decrypt("ABC",
+                        row["userPassword"].ToString()),
+                        userEmail = row["userEmail"].ToString(),
+                        roleId = Convert.ToInt32(row["roleId"]),
+                        userRole= row["roleName"].ToString(),
                         userStatus = Convert.ToBoolean(row["userStatus"]),
                         createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
                         updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
 
 
-                    }); ;
+                    }) ; ;
                 }
 
 
@@ -86,12 +91,12 @@ namespace Task_Management.Controllers
         {
             try
             {
-                string hashedPassword = EncryptPassword.Encrypt("ABC", user.userPassword);
+                string hashedPassword = EncryptDecryptPassword.Encrypt("ABC", user.userPassword);
 
                 string query = $@"
             SELECT U.*, R.roleId, R.roleName 
             FROM User_Mst U
-            JOIN UserRole_Mst UR ON U.userId = UR.userId
+            JOIN User_Role_Mst UR ON U.userId = UR.userId
             JOIN Role_Mst R ON UR.roleId = R.roleId
             WHERE U.userEmail = '{user.userEmail}' 
               AND U.userPassword = '{hashedPassword}' 
@@ -174,16 +179,17 @@ namespace Task_Management.Controllers
                 if (user.userPassword != null)
                 {
 
-                    string hashedPassword = EncryptPassword.Encrypt("ABC", user.userPassword);
+                    string hashedPassword = EncryptDecryptPassword.Encrypt("ABC", user.userPassword);
 
                     user.userPassword = hashedPassword;
+
                 }
                 user.userName = validation.ConvertLetterCase(new LetterCasePerameter
                 {
                     caseType = "titlecase",
                     column = user.userName
                 });
-                insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
+              //  insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
 
                 if (validation.CheckNullValues(user.userName)|| validation.CheckNullValues(user.userEmail)|| validation.CheckNullValues(user.userPassword))
                 {
@@ -206,16 +212,17 @@ namespace Task_Management.Controllers
                         return StatusCode(StatusCodes.Status404NotFound, Resp);
                     }
 
-                    var duplicacyParameter = new checkDuplicacyper
+                    var duplicacyParameter = new CheckDuplicacyPerameter
                     {
                         tableName = "User_Mst",
                         fields = new[] { "userName", "userEmail" },
                         values = new[] { user.userName, user.userEmail },
                         idField = "userId",
-                        idValue= user.userId.ToString()
+                        idValue= user.userId.ToString(),
+                        
                     };
 
-                    if (validation.CheckDuplicate(duplicacyParameter))
+                    if (_dc.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
                         Resp.message = $"User Name User Email already exists.";
@@ -224,7 +231,7 @@ namespace Task_Management.Controllers
                     }
 
                     user.updatedAt = DateTime.Now.ToString();
-                    _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
+                    _query = _dc.InsertOrUpdateEntity(new InsertUpdatePerameters
                     {
                         entity = user,
                         tableName = "User_Mst",
@@ -247,14 +254,14 @@ namespace Task_Management.Controllers
                 }
                 else
                 {
-                    var duplicacyParameter = new checkDuplicacyper
+                    var duplicacyParameter = new CheckDuplicacyPerameter
                     {
                         tableName = "User_Mst",
                         fields = new[] { "userName", "userEmail" },
                         values = new[] { user.userName, user.userEmail }
                     };
 
-                    if (validation.CheckDuplicate(duplicacyParameter))
+                    if (_dc.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
                         Resp.message = $"User already exists.";
@@ -265,13 +272,13 @@ namespace Task_Management.Controllers
                     }
 
 
-                    _query = insertupdateTestclass.InsertOrUpdateEntity(new InsertUpdatePerameters
+                    _query = _dc.InsertOrUpdateEntity(new InsertUpdatePerameters
                     {
                         entity = user,
                         tableName = "User_Mst",
 
                     });
-                    Resp.message = "User Register successfully";
+                    Resp.message = "User Added successfully";
                 }
                 Resp.statusCode = StatusCodes.Status200OK;
                 Resp.isSuccess = true;

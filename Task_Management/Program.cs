@@ -29,7 +29,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 builder.Services.AddCors(options =>
 {
-    options.AddPolicy("ReactConnection", policy =>
+    options.AddPolicy("FlutterConnection", policy =>
     {
         policy.WithOrigins("*")
         .AllowAnyOrigin()
@@ -39,8 +39,6 @@ builder.Services.AddCors(options =>
     });
 });
 
-builder.Services.AddControllers();
-// Add services to the container.
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
@@ -49,7 +47,7 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ConnectionClass>();
 
 var app = builder.Build();
-app.UseCors("ReactConnection");
+app.UseCors("FlutterConnection");
 
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
@@ -62,9 +60,7 @@ Connection.ConnectionStr = new
     ConnectionClass(builder.Configuration).GetSqlConnection().ConnectionString;
 Connection.Connect();
 //builder.Configuration["ConnectionStrings:Issuer"]
-Connection.ConnectionStr = new
-    ConnectionClass(builder.Configuration).GetSqlConnection().ConnectionString;
-Connection.Connect();
+
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAuthentication();
