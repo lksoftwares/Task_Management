@@ -26,7 +26,6 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 
 
 
-
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FlutterConnection", policy =>
@@ -66,7 +65,6 @@ app.UseStaticFiles();
 app.UseAuthentication();
 
 app.UseAuthorization();
-app.MapControllers();
 app.MapControllers();
 
 app.Run();

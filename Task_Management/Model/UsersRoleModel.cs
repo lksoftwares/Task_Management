@@ -2,7 +2,7 @@
 
 namespace Task_Management.Model
 {
-    public class UsersModel
+    public class UsersRoleModel
     {
         [JsonPropertyName("userId")]
         public int? userId { get; set; }
@@ -29,7 +29,18 @@ namespace Task_Management.Model
         public string? updatedAt { get; set; }
         public bool? updateFlag { get; set; } = false;
         public string ? userRole { get; set; }
+        public List<userRoleData> ? userRoles { get; set; }
         [JsonPropertyName("userRoleId")]
         public int? userRoleId { get; set; }
+
+    }
+    public class userRoleData
+    {
+        public int roleId { get; set; }
+        public string roleName { get; set; }
+
+        [JsonPropertyName("userRoleId")]
+        public int? userRoleId { get; set; }
+
     }
 }

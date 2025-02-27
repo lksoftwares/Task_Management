@@ -1,5 +1,6 @@
 ﻿using LkDataConnection;
 using Microsoft.Data.SqlClient;
+using Microsoft.Extensions.Configuration;
 using System.Data;
 
 namespace Task_Management.Classes
@@ -9,9 +10,11 @@ namespace Task_Management.Classes
         private string _ConnectionString;
 
         private SqlConnection _connection;
+        private IConfiguration configuration1;
+       
         public ConnectionClass(IConfiguration configuration)
         {
-
+            configuration1 = configuration;
 
             EncryptDecrypt _lkencr = new EncryptDecrypt();
 
@@ -41,11 +44,29 @@ namespace Task_Management.Classes
 
 
 
+
         }
         public SqlConnection GetSqlConnection()
         {
             return _connection;
         }
+
+        public dynamic tokenParam()
+        {
+            string Issuer = configuration1["Jwt:Issuer"];
+            string Audience = configuration1["Jwt:Audience"];
+            string key = configuration1["Jwt:Key"];
+            object tokenper = new
+            {
+                Issuer,
+                Audience,
+                key
+            };
+            return (tokenper);
+
+        }
+
+
         
         
 

@@ -12,22 +12,30 @@ namespace Task_Management.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
+        IConfiguration _configuration;
+        public UserController(IConfiguration configuration)
+        {
+            _configuration = configuration;
+
+
+        }
+
         ApiResponse Resp = new ApiResponse();
         Validation validation = new Validation();
         EncryptDecrypt EncryptDecryptPassword = new EncryptDecrypt();
         Connection _Connection = new Connection();
         DataAccess _dc = new DataAccess();
         SqlQueryResult _query = new SqlQueryResult();
-      
+
         [HttpGet]
         [Route("GetAllUsers")]
         public IActionResult GetAllUsers()
         {
             try
             {
-               
-               
-                string query = $"SELECT     u.*,     r.roleId,     r.roleName FROM     User_Mst u JOIN     User_Role_Mst ur ON u.userId = ur.userId JOIN    Role_Mst r ON ur.roleId = r.roleId ORDER BY     u.userName ASC;";
+
+
+                string query = $"SELECT    u.*,    r.roleId,    r.roleName FROM    User_Mst u LEFT JOIN     User_Role_Mst ur ON u.userId = ur.userId LEFT JOIN    Role_Mst r ON ur.roleId = r.roleId ORDER BY    u.userName ASC";
 
                 var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
@@ -42,24 +50,37 @@ namespace Task_Management.Controllers
                 }
 
 
-                var UserList = new List<UsersModel>();
+                var UserList = new List<UsersRoleModel>();
                 foreach (DataRow row in Table.Rows)
                 {
-                    UserList.Add(new UsersModel
+                    int userId = Convert.ToInt32(row["userId"]);
+                    var existingUser = UserList.FirstOrDefault(u => u.userId == userId);
+                    if (existingUser == null)
                     {
-                        userId = Convert.ToInt32(row["userId"]),
-                        userName = row["userName"].ToString(),
-                        userPassword = EncryptDecryptPassword.Decrypt("ABC",
+                        existingUser = new UsersRoleModel
+                        {
+                            userId = userId,
+                            userName = row["userName"].ToString(),
+                            userPassword = EncryptDecryptPassword.Decrypt("ABC",
                         row["userPassword"].ToString()),
-                        userEmail = row["userEmail"].ToString(),
-                        roleId = Convert.ToInt32(row["roleId"]),
-                        userRole= row["roleName"].ToString(),
-                        userStatus = Convert.ToBoolean(row["userStatus"]),
-                        createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
-                        updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
+                            userEmail = row["userEmail"].ToString(),
 
-
-                    }) ; ;
+                            userStatus = Convert.ToBoolean(row["userStatus"]),
+                            createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+                            updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+                            userRoles = new List<userRoleData>()
+                        };
+                        UserList.Add(existingUser);
+                }
+                    if (row["roleId"] != DBNull.Value)
+                    {
+                        existingUser.userRoles?.Add(new userRoleData
+                        {
+                            roleId = Convert.ToInt32(row["roleId"]),
+                            roleName = row["roleName"].ToString()
+                        });
+                    }
+                   
                 }
 
 
@@ -68,7 +89,6 @@ namespace Task_Management.Controllers
                 Resp.message = $"User fetched successfully ";
                 Resp.apiResponse = UserList;
                 Resp.isSuccess = true;
-
                 return Ok(Resp);
             }
             catch (Exception ex)
@@ -84,10 +104,75 @@ namespace Task_Management.Controllers
         }
 
 
+        //[HttpGet]
+        //[Route("GetAllUsers")]
+        //public IActionResult GetAllUsers()
+        //{
+        //    try
+        //    {
+
+
+        //        string query = $"SELECT    u.*,    r.roleId,    r.roleName FROM    User_Mst u LEFT JOIN     User_Role_Mst ur ON u.userId = ur.userId LEFT JOIN    Role_Mst r ON ur.roleId = r.roleId ORDER BY    u.userName ASC";
+
+        //        var result = _Connection.bindmethod(query);
+        //        DataTable Table = result._DataTable;
+        //        if (Table == null)
+        //        {
+        //            Resp.statusCode = StatusCodes.Status200OK;
+        //            Resp.message = $"No User Found ";
+        //            Resp.isSuccess = true;
+
+        //            return Ok(Resp);
+
+        //        }
+
+
+        //        var UserList = new List<UsersRoleModel>();
+        //        foreach (DataRow row in Table.Rows)
+        //        {
+        //            UserList.Add(new UsersRoleModel
+        //            {
+        //                userId = Convert.ToInt32(row["userId"]),
+        //                userName = row["userName"].ToString(),
+        //                userPassword = EncryptDecryptPassword.Decrypt("ABC",
+        //                row["userPassword"].ToString()),
+        //                userEmail = row["userEmail"].ToString(),
+        //                roleId = row["roleId"] == DBNull.Value ? null : Convert.ToInt32(row["roleId"]),
+        //                userRole = row["roleName"] == DBNull.Value ? string.Empty : row["roleName"].ToString(),
+        //                userStatus = Convert.ToBoolean(row["userStatus"]),
+        //                createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+        //                updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
+
+
+        //            });
+        //        }
+
+
+
+        //        Resp.statusCode = StatusCodes.Status200OK;
+        //        Resp.message = $"User fetched successfully ";
+        //        Resp.apiResponse = UserList;
+        //        Resp.isSuccess = true;
+
+        //        return Ok(Resp);
+        //    }
+        //    catch (Exception ex)
+        //    {
+
+        //        Resp.statusCode = StatusCodes.Status500InternalServerError;
+        //        Resp.message = ex.Message;
+
+        //        return StatusCode(StatusCodes.Status500InternalServerError, Resp);
+
+        //    }
+
+        //}
+
+
         [AllowAnonymous]
         [HttpPost]
         [Route("Login")]
-        public IActionResult Login(UsersModel user)
+        public IActionResult Login(UsersRoleModel user)
         {
             try
             {
@@ -134,9 +219,12 @@ namespace Task_Management.Controllers
 
                 string token = _web.GenerateToken(new WebTokenValidationParameters
                 {
-                    ValidIssuer = "http://localhost:5266/",
-                    ValidAudience = "http://localhost:5266/",
-                    IssuerSigningKey = "2Fsk5LBU5j1DrPldtFmLWeO8uZ8skUzwhe3ktVimUE8l=",
+                    ValidIssuer = _configuration["Jwt:Issuer"],
+                    ValidAudience = _configuration["Jwt:Audience"],
+                    IssuerSigningKey = _configuration["Jwt:Key"],
+                    //ValidIssuer = "http://localhost:5266/",
+                    //ValidAudience = "http://localhost:5266/",
+                    //IssuerSigningKey = "2Fsk5LBU5j1DrPldtFmLWeO8uZ8skUzwhe3ktVimUE8l=",
                 }, new UserDetails
                 {
                     ListKeydetails = _userdetails.ListKeydetails
@@ -169,7 +257,7 @@ namespace Task_Management.Controllers
     
         [HttpPost]
         [Route("AddEditUser")]
-        public IActionResult AddEditUser([FromForm] UsersModel user)
+        public IActionResult AddEditUser([FromForm] UsersRoleModel user)
         {
 
         

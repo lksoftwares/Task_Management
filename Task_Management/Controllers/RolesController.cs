@@ -9,7 +9,7 @@ using Task_Management.Model;
 
 namespace Task_Management.Controllers
 {
-  //  [Authorize]
+    [Authorize]
     [Route("/[controller]")]
     [ApiController]
     public class RolesController : ControllerBase
@@ -90,7 +90,7 @@ namespace Task_Management.Controllers
             try
             {
                
-                insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
+              
 
 
               
@@ -250,11 +250,6 @@ namespace Task_Management.Controllers
             }
         }
 
-
-
-
-
-
         [HttpDelete]
         [Route("DeleteRole/{roleId}")]
         public IActionResult DeleteRole(int roleId)
@@ -314,7 +309,7 @@ namespace Task_Management.Controllers
         {
             try
             {
-                string query = $"select UR.*,r.roleName,U.userName from User_Role_Mst UR join User_Mst U ON UR.userId = U.userId join Role_Mst R ON UR.roleId = R.roleId order by UR.createdAt";
+                string query = $"select UR.*,r.roleName,r.roleId, U.userName from User_Role_Mst UR join User_Mst U ON UR.userId = U.userId join Role_Mst R ON UR.roleId = R.roleId order by UR.createdAt";
 
                 var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
@@ -324,28 +319,44 @@ namespace Task_Management.Controllers
                     Resp.statusCode = StatusCodes.Status200OK;
                     Resp.message = $"No Data Found ";
                     Resp.isSuccess = true;
-
                     return Ok(Resp);
 
                 }
 
 
-                var UserRoleList = new List<UsersModel>();
+                var UserRoleList = new List<UsersRoleModel>();
                 foreach (DataRow row in Table.Rows)
                 {
-                    UserRoleList.Add(new UsersModel
+                    int userId = Convert.ToInt32(row["userId"]);
+                    var existingUser = UserRoleList.FirstOrDefault(u=> u.userId == userId);
+                    if(existingUser == null)
                     {
-                        userRoleId = Convert.ToInt32(row["userRoleId"]),
-                        roleId = Convert.ToInt32(row["roleId"]),
-                        userRole = row["roleName"].ToString(),
-                        userId = Convert.ToInt32(row["userId"]),
-                        userName = row["userName"].ToString(),
-                        createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
-                        updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
+                        existingUser = new UsersRoleModel
+                        {
+                         //   userRoleId = Convert.ToInt32(row["userRoleId"]),
+                            //  roleId = Convert.ToInt32(row["roleId"]),
+                            // userRole = row["roleName"].ToString(),
+                            userId = Convert.ToInt32(row["userId"]),
+                            userName = row["userName"].ToString(),
+                            createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+                            updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+                            userRoles = new List<userRoleData>()
+                        };
+                        UserRoleList.Add(existingUser);
+                    }
+                    if(row["roleId"] != DBNull.Value)
+                    {
+                        existingUser.userRoles?.Add(new userRoleData
+                        {
+                            roleId = Convert.ToInt32(row["roleId"]),
+                            roleName = row["roleName"].ToString(),
+                            userRoleId = Convert.ToInt32(row["userRoleId"])
 
+                        });
 
+                    }
 
-                    });
+                    
                 }
 
 
@@ -372,15 +383,13 @@ namespace Task_Management.Controllers
 
         }
 
-
         [HttpPost]
         [Route("AddEditUserRole")]
-        public IActionResult AddEditUserRole([FromBody] UsersModel userRole)
+        public IActionResult AddEditUserRole([FromBody] UsersRoleModel userRole)
         {
             try
             {
 
-                //insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
 
 
 
@@ -451,17 +460,17 @@ namespace Task_Management.Controllers
                 }
                 else
                 {
-                    var duplicacyParameter = new checkDuplicacyper
+                    var duplicacyParameter = new CheckDuplicacyPerameter
                     {
                         tableName = "User_Role_Mst",
                         fields = new[] { "userId", "roleId" },
                         values = new[] { userRole.userId.ToString(), userRole.roleId.ToString() },
-                        OrAndFlag = true
+                        andFlag = true
 
 
                     };
 
-                    if (validation.CheckDuplicate(duplicacyParameter))
+                    if (_dc.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
                         Resp.message = $" This Role Already Assigned To The Same User";
@@ -510,6 +519,48 @@ namespace Task_Management.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, Resp);
             }
         }
+        [HttpDelete]
+        [Route("DeleteUserRole/{userRoleId}")]
+        public IActionResult DeleteUserRole(int userRoleId)
+        {
+            try
+            {
+                var userRoleExists = $"SELECT COUNT(*) FROM User_Role_Mst WHERE userRoleId = {userRoleId} ";
+                int result = Convert.ToInt32(Connection.ExecuteScalar(userRoleExists));
+
+
+                if (result == 0)
+                {
+                    Resp.statusCode = StatusCodes.Status404NotFound;
+                    Resp.message = $"UserRole ID does not exist.";
+
+                    return StatusCode(StatusCodes.Status404NotFound, Resp);
+
+                }
+
+
+                string deleteUserRoleQuery = $"Delete from User_Role_Mst where userRoleId='{userRoleId}'";
+
+                Connection.ExecuteNonQuery(deleteUserRoleQuery);
+                Resp.statusCode = StatusCodes.Status200OK;
+                Resp.message = "UserRole  Deleted successfully";
+                Resp.isSuccess = true;
+
+
+                return StatusCode(StatusCodes.Status200OK, Resp);
+
+
+            }
+            catch (Exception ex)
+            {
+                Resp.statusCode = StatusCodes.Status500InternalServerError;
+                Resp.message = ex.Message;
+
+
+                return StatusCode(StatusCodes.Status500InternalServerError, Resp);
+            }
+        }
+
     }
 
 }
