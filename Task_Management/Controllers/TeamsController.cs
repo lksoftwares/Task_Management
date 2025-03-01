@@ -1,7 +1,5 @@
 ﻿using LkDataConnection;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 using System.Data;
 using Task_Management.Classes;
@@ -9,39 +7,32 @@ using Task_Management.Model;
 
 namespace Task_Management.Controllers
 {
-   // [Authorize]
     [Route("/[controller]")]
     [ApiController]
-    public class RolesController : ControllerBase
+    public class TeamsController : ControllerBase
     {
         Connection _Connection = new Connection();
         ApiResponse Resp = new ApiResponse();
        // Validation validation = new Validation();
-     
+
         DataAccess _dataAccess = new DataAccess();
-       SqlQueryResult _query = new SqlQueryResult();
-       
+        SqlQueryResult _query = new SqlQueryResult();
+
         [HttpGet]
-        [Route("GetAllRole")]
-        public IActionResult GetAllRole(int? userId =null)
+        [Route("GetAllTeam")]
+        public IActionResult GetAllTeam()
         {
             try
             {
-                string query = $"select * from Role_Mst  where roleStatus = 1  " ;
-
-                if (userId.HasValue)
-                {
-                    query += $" AND roleId NOT IN (SELECT roleId FROM User_Role_Mst WHERE userId = {userId}) ";
-                }
-                query += $"ORDER BY roleName ASC";
-
+                string query = $"select * from Team_mst ORDER BY teamName ASC";
 
                 var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
+
                 if (Table == null)
                 {
                     Resp.statusCode = StatusCodes.Status200OK;
-                    Resp.message = $"No Role Found ";
+                    Resp.message = $"No Team Found ";
                     Resp.isSuccess = true;
 
                     return Ok(Resp);
@@ -49,30 +40,30 @@ namespace Task_Management.Controllers
                 }
 
 
-                var RoleList = new List<RolesModel>();
+                var TeamList = new List<TeamModel>();
                 foreach (DataRow row in Table.Rows)
                 {
-                    RoleList.Add(new RolesModel
+                    TeamList.Add(new TeamModel
                     {
-                        roleId = Convert.ToInt32(row["roleId"]),
-                        roleName = row["roleName"].ToString(),
-                        roleStatus = Convert.ToBoolean(row["roleStatus"]),
+                        teamId = Convert.ToInt32(row["teamId"]),
+                        teamName = row["teamName"].ToString(),
+                        tmDescription = row["tmDescription"].ToString(),                    
                         createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
                         updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
-                      
+
 
 
                     });
                 }
 
-             
 
 
 
 
-        Resp.statusCode = StatusCodes.Status200OK;
-                Resp.message = $"Role fetched successfully ";
-                Resp.apiResponse = RoleList;
+
+                Resp.statusCode = StatusCodes.Status200OK;
+                Resp.message = $"Team fetched successfully ";
+                Resp.apiResponse = TeamList;
                 Resp.isSuccess = true;
 
                 return Ok(Resp);
@@ -90,68 +81,68 @@ namespace Task_Management.Controllers
         }
         [HttpPost]
 
-        [Route("AddEditRole")]
-        public IActionResult AddEditRole([FromBody] RolesModel role)
+        [Route("AddEditTeam")]
+        public IActionResult AddEditTeam([FromBody] TeamModel team)
         {
             try
             {
-               
-              
 
 
-              
-                if (_dataAccess.CheckNullValues(role.roleName))
+
+
+
+                if (_dataAccess.CheckNullValues(team.teamName))
                 {
                     Resp.statusCode = StatusCodes.Status204NoContent;
-                    Resp.message = $"RoleName Can't be Blank Or Null";
+                    Resp.message = $"Team Name Can't be Blank Or Null";
 
                     return StatusCode(StatusCodes.Status204NoContent, Resp);
 
                 }
-                role.roleName = _dataAccess.ConvertLetterCase(new LetterCasePerameter
+                team.teamName = _dataAccess.ConvertLetterCase(new LetterCasePerameter
                 {
                     caseType = "titlecase",
-                    column = role.roleName
+                    column = team.teamName
                 });
-                if (!_dataAccess.CheckNullValues(role.roleId.ToString()) && role.roleId > 0 && role.updateFlag == true)
+                if (!_dataAccess.CheckNullValues(team.teamId.ToString()) && team.teamId > 0 && team.updateFlag == true)
 
                 {
-                    var roleExistsQuery = $"SELECT COUNT(*) FROM Role_Mst WHERE roleId = {role.roleId}";
-                    int roleExists = 
-                        (int)(Connection.ExecuteScalar(roleExistsQuery));
+                    var teamExistsQuery = $"SELECT COUNT(*) FROM Team_Mst WHERE teamId = {team.teamId}";
+                    int teamExists =
+                       (int)Connection.ExecuteScalar(teamExistsQuery);
 
-                    if (roleExists == 0)
+                    if (teamExists == 0)
                     {
                         Resp.statusCode = StatusCodes.Status404NotFound;
-                        Resp.message = $"Role ID does not exist.";
+                        Resp.message = $"Team ID does not exist.";
                         return StatusCode(StatusCodes.Status404NotFound, Resp);
                     }
 
                     var duplicacyParameter = new CheckDuplicacyPerameter
                     {
-                        tableName = "Role_Mst",
-                        fields = new[] { "roleName" },
-                        values = new[] { role.roleName },
-                        idField = "roleId",
-                        idValue = role.roleId.ToString()
+                        tableName = "Team_Mst",
+                        fields = new[] { "teamName" },
+                        values = new[] { team.teamName },
+                        idField = "teamId",
+                        idValue = team.teamId.ToString()
                     };
 
                     if (_dataAccess.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                        Resp.message = $"RoleName already exists.";
+                        Resp.message = $"Team already exists.";
                         Resp.dup = true;
                         return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
                     }
-                  
 
-                    role.updatedAt = DateTime.Now.ToString();
+
+                    team.updatedAt = DateTime.Now.ToString();
                     _query = _dataAccess.InsertOrUpdateEntity(new InsertUpdatePerameters
                     {
-                        entity = role,
-                        tableName = "Role_Mst",
-                        id = (int)role.roleId,
-                        idPropertyName = "roleId"
+                        entity = team,
+                        tableName = "Team_Mst",
+                        id = (int)team.teamId,
+                        idPropertyName = "teamId"
 
                     });
 
@@ -161,27 +152,27 @@ namespace Task_Management.Controllers
                     }
                     else
                     {
-                        Resp.message = "Role Name Updated Successfully";
+                        Resp.message = "Team  Updated Successfully";
 
                     }
-               
+
                 }
                 else
                 {
 
-                 
+
 
                     var duplicacyParameter = new CheckDuplicacyPerameter
                     {
-                        tableName = "Role_mst",
-                        fields = new[] { "roleName" },
-                        values = new[] { role.roleName }
+                        tableName = "Team_Mst",
+                        fields = new[] { "teamName" },
+                        values = new[] { team.teamName }
                     };
 
                     if (_dataAccess.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                        Resp.message = $"RoleName already exists.";
+                        Resp.message = $"Team  already exists.";
                         Resp.dup = true;
 
 
@@ -190,21 +181,20 @@ namespace Task_Management.Controllers
 
                     _query = _dataAccess.InsertOrUpdateEntity(new InsertUpdatePerameters
                     {
-                        entity = role,
-                        tableName = "Role_Mst",
+                        entity = team,
+                        tableName = "Team_Mst",
 
                     });
 
 
 
-                    // _query = _dc.InsertOrUpdateEntity(role, "Role_Mst", -1);
-                    if (_query.QueryErrorMessage!=null)
+                    if (_query.QueryErrorMessage != null)
                     {
                         Resp.message = _query.QueryErrorMessage;
                     }
                     else
                     {
-                        Resp.message = $"RoleName Added Successfully";
+                        Resp.message = $"Team Added Successfully";
                     }
 
                 }
@@ -225,31 +215,30 @@ namespace Task_Management.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, Resp);
             }
         }
-
         [HttpDelete]
-        [Route("DeleteRole/{roleId}")]
-        public IActionResult DeleteRole(int roleId)
+        [Route("DeleteTeam/{teamId}")]
+        public IActionResult DeleteTeam(int teamId)
         {
-       try
+            try
             {
-                var roleExists = $"SELECT COUNT(*) FROM Role_Mst WHERE roleId = {roleId} ";
-                int result = Convert.ToInt32( Connection.ExecuteScalar(roleExists));
+                var teamExists = $"SELECT COUNT(*) FROM Team_Mst WHERE teamId = {teamId} ";
+                int result = Convert.ToInt32(Connection.ExecuteScalar(teamExists));
 
 
                 if (result == 0)
                 {
                     Resp.statusCode = StatusCodes.Status404NotFound;
-                    Resp.message = $"Role ID does not exist.";
+                    Resp.message = $"Team ID does not exist.";
 
                     return StatusCode(StatusCodes.Status404NotFound, Resp);
 
                 }
-             
-                string checkQuery = $"SELECT COUNT(*) AS recordCount FROM User_Role_Mst WHERE roleId = {roleId}";
+
+                string checkQuery = $"SELECT COUNT(*) AS recordCount FROM Team_Member_Mst WHERE teamId = {teamId}";
 
 
-                int roleIdInUser = Convert.ToInt32(Connection.ExecuteScalar(checkQuery));
-                if (roleIdInUser > 0)
+                int teamIdInTmMember = Convert.ToInt32(Connection.ExecuteScalar(checkQuery));
+                if (teamIdInTmMember > 0)
                 {
                     Resp.statusCode = StatusCodes.Status208AlreadyReported;
                     Resp.message = $"Can't delete Exists in another table";
@@ -258,11 +247,11 @@ namespace Task_Management.Controllers
 
 
                 }
-                string deleteRoleQuery = $"Delete from Role_Mst where roleId='{roleId}'";
+                string deleteRoleQuery = $"Delete from Team_Mst where teamId='{teamId}'";
 
-                 Connection.ExecuteNonQuery(deleteRoleQuery);
+                Connection.ExecuteNonQuery(deleteRoleQuery);
                 Resp.statusCode = StatusCodes.Status200OK;
-                Resp.message = "Role  Deleted successfully";
+                Resp.message = "Team  Deleted successfully";
                 Resp.isSuccess = true;
 
 
@@ -279,13 +268,28 @@ namespace Task_Management.Controllers
                 return StatusCode(StatusCodes.Status500InternalServerError, Resp);
             }
         }
+
         [HttpGet]
-        [Route("GetAllUserRole")]
-        public IActionResult GetAllUserRole()
+        [Route("GetAllTeamMember")]
+        public IActionResult GetAllTeamMember()
         {
-            try
-            {
-                string query = $"select UR.*,r.roleName,r.roleId, usr.userName from User_Role_Mst UR join User_Mst usr ON UR.userId = usr.userId join Role_Mst R ON UR.roleId = R.roleId order by UR.createdAt";
+            try { 
+ string query = @"SELECT 
+    tmm.tmId,
+    tm.teamName,
+tm.teamId,
+ u.userId,
+    u.userName,
+    r.roleName,
+ r.roleId,
+    tmm.tmStatus,
+    tmm.assignedAt,
+    tmm.createdAt,
+    tmm.updatedAt
+FROM Team_Member_Mst tmm
+JOIN User_Mst u ON tmm.userId = u.userId
+JOIN Role_Mst r ON tmm.roleId = r.roleId
+JOIN Team_Mst tm ON tmm.teamId = tm.teamId ";
 
                 var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
@@ -293,54 +297,36 @@ namespace Task_Management.Controllers
                 if (Table == null)
                 {
                     Resp.statusCode = StatusCodes.Status200OK;
-                    Resp.message = $"No Data Found ";
+                    Resp.message = $"No Team Member Found ";
                     Resp.isSuccess = true;
+
                     return Ok(Resp);
 
                 }
 
 
-                var UserRoleList = new List<UsersRoleModel>();
+                var TeamMemberList = new List<TeamModel>();
                 foreach (DataRow row in Table.Rows)
                 {
-                    int userId = Convert.ToInt32(row["userId"]);
-                    var existingUser = UserRoleList.FirstOrDefault(u=> u.userId == userId);
-                    if(existingUser == null)
+                    TeamMemberList.Add(new TeamModel
                     {
-                        existingUser = new UsersRoleModel
-                        {
-                        
-                            userId = Convert.ToInt32(row["userId"]),
-                            userName = row["userName"].ToString(),
-                            createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
-                            updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
-                            userRoles = new List<userRoleData>()
-                        };
-                        UserRoleList.Add(existingUser);
-                    }
-                    if(row["roleId"] != DBNull.Value)
-                    {
-                        existingUser.userRoles?.Add(new userRoleData
-                        {
-                            roleId = Convert.ToInt32(row["roleId"]),
-                            roleName = row["roleName"].ToString(),
-                            userRoleId = Convert.ToInt32(row["userRoleId"])
+                        tmId = Convert.ToInt32(row["tmId"]),
+                        teamId = Convert.ToInt32(row["teamId"]),
+                        teamName = row["teamName"].ToString(),
+                        roleId = Convert.ToInt32(row["roleId"]),
+                        roleName = row["roleName"].ToString(),
+                        userId = Convert.ToInt32(row["userId"]),
+                        userName = row["userName"].ToString(),
+                        createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
+                        updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
 
-                        });
 
-                    }
 
-                    
+                    });
                 }
-
-
-
-
-
-                //then print e if not then ne 
                 Resp.statusCode = StatusCodes.Status200OK;
-                Resp.message = $"User Role fetched successfully ";
-                Resp.apiResponse = UserRoleList;
+                Resp.message = $"Team Member fetched successfully ";
+                Resp.apiResponse = TeamMemberList;
                 Resp.isSuccess = true;
 
                 return Ok(Resp);
@@ -356,68 +342,64 @@ namespace Task_Management.Controllers
             }
 
         }
-
         [HttpPost]
-        [Route("AddEditUserRole")]
-        public IActionResult AddEditUserRole([FromBody] UsersRoleModel userRole)
+
+        [Route("AddEditTeamMember")]
+        public IActionResult AddEditTeamMember([FromBody] TeamModel team)
         {
             try
             {
 
 
-
-
-                if (_dataAccess.CheckNullValues(userRole.userId.ToString()) || _dataAccess.CheckNullValues(userRole.roleId.ToString()))
+                if (_dataAccess.CheckNullValues(team.teamId.ToString())|| _dataAccess.CheckNullValues(team.userId.ToString()) || _dataAccess.CheckNullValues(team.roleId.ToString()))
                 {
                     Resp.statusCode = StatusCodes.Status204NoContent;
-                    Resp.message = $"User and Role Can't be Blank Or Null";
+                    Resp.message = $"Team Id ,User Id ,Role Id Can't be Blank Or Null";
 
                     return StatusCode(StatusCodes.Status204NoContent, Resp);
 
                 }
-
-                if (!_dataAccess.CheckNullValues(userRole.userRoleId.ToString()) && userRole.userRoleId > 0 && userRole.updateFlag == true)
+              
+                if (!_dataAccess.CheckNullValues(team.tmId.ToString()) && team.tmId > 0 && team.updateFlag == true)
 
                 {
-                    var UserRoleExistsQuery = $"SELECT COUNT(*) FROM User_Role_Mst WHERE userRoleId = {userRole.userRoleId}";
-                    int UserRoleExists =
-                        (int)(Connection.ExecuteScalar(UserRoleExistsQuery));
+                    var teamExistsQuery = $"SELECT COUNT(*) FROM Team_Member_Mst WHERE tmId = {team.tmId}";
+                    int teamExists =
+                       (int)Connection.ExecuteScalar(teamExistsQuery);
 
-                    if (UserRoleExists == 0)
+                    if (teamExists == 0)
                     {
                         Resp.statusCode = StatusCodes.Status404NotFound;
-                        Resp.message = $"UserRole ID does not exist.";
+                        Resp.message = $"Tm ID does not exist.";
                         return StatusCode(StatusCodes.Status404NotFound, Resp);
                     }
+
                     var duplicacyParameter = new CheckDuplicacyPerameter
                     {
-                        tableName = "User_Role_Mst",
-                        fields = new[] { "userId", "roleId" },
-                        values = new[] { userRole.userId.ToString(), userRole.roleId.ToString() },
-                        idField = "userRoleId",
-                        idValue = userRole.userRoleId.ToString(),
-                        andFlag = true
-
+                        tableName = "Team_Member_Mst",
+                        fields = new[] { "teamId", "userId", "roleId" },
+                        values = new[] { team.teamId.ToString(),team.userId.ToString(),team.roleId.ToString() },
+                        idField = "tmId",
+                        idValue = team.tmId.ToString(),
+                        andFlag= true
                     };
 
                     if (_dataAccess.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                        Resp.message = $" This Role Already Assigned To The Same User";
+                        Resp.message = $"Team Member already exists.";
                         Resp.dup = true;
                         return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
                     }
 
 
-
-
-                    userRole.updatedAt = DateTime.Now.ToString();
+                    team.updatedAt = DateTime.Now.ToString();
                     _query = _dataAccess.InsertOrUpdateEntity(new InsertUpdatePerameters
                     {
-                        entity = userRole,
-                        tableName = "User_Role_Mst",
-                        id = (int)userRole.userRoleId,
-                        idPropertyName = "userRoleId"
+                        entity = team,
+                        tableName = "Team_Member_Mst",
+                        id = (int)team.tmId,
+                        idPropertyName = "tmId"
 
                     });
 
@@ -427,42 +409,44 @@ namespace Task_Management.Controllers
                     }
                     else
                     {
-                        Resp.message = "User And Role  Updated Successfully";
+                        Resp.message = "Team  Updated Successfully";
 
                     }
 
                 }
                 else
                 {
+
+
+
+
                     var duplicacyParameter = new CheckDuplicacyPerameter
                     {
-                        tableName = "User_Role_Mst",
-                        fields = new[] { "userId", "roleId" },
-                        values = new[] { userRole.userId.ToString(), userRole.roleId.ToString() },
-                        andFlag = true
+                        tableName = "Team_Member_Mst",
+                        fields = new[] { "teamId", "userId", "roleId" },
+                        values = new[] { team.teamId.ToString(), team.userId.ToString(), team.roleId.ToString() },
+                        andFlag=true
 
-
+                       
+                        
                     };
 
                     if (_dataAccess.CheckDuplicate(duplicacyParameter))
                     {
                         Resp.statusCode = StatusCodes.Status208AlreadyReported;
-                        Resp.message = $" This Role Already Assigned To The Same User";
+                        Resp.message = $"Team  already exists.";
                         Resp.dup = true;
+
+
                         return StatusCode(StatusCodes.Status208AlreadyReported, Resp);
                     }
 
-
-
-
-
                     _query = _dataAccess.InsertOrUpdateEntity(new InsertUpdatePerameters
                     {
-                        entity = userRole,
-                        tableName = "User_Role_Mst",
+                        entity = team,
+                        tableName = "Team_Member_Mst",
 
                     });
-
 
 
 
@@ -472,7 +456,7 @@ namespace Task_Management.Controllers
                     }
                     else
                     {
-                        Resp.message = $"User And Role Added Successfully";
+                        Resp.message = $"Team Added Successfully";
                     }
 
                 }
@@ -494,30 +478,30 @@ namespace Task_Management.Controllers
             }
         }
         [HttpDelete]
-        [Route("DeleteUserRole/{userRoleId}")]
-        public IActionResult DeleteUserRole(int userRoleId)
+        [Route("deleteTeamMember/{tmId}")]
+        public IActionResult deleteTeamMember(int tmId)
         {
             try
             {
-                var userRoleExists = $"SELECT COUNT(*) FROM User_Role_Mst WHERE userRoleId = {userRoleId} ";
-                int result = Convert.ToInt32(Connection.ExecuteScalar(userRoleExists));
+                var teamExists = $"SELECT COUNT(*) FROM Team_Member_Mst WHERE tmId = {tmId} ";
+                int result = Convert.ToInt32(Connection.ExecuteScalar(teamExists));
 
 
                 if (result == 0)
                 {
                     Resp.statusCode = StatusCodes.Status404NotFound;
-                    Resp.message = $"UserRole ID does not exist.";
+                    Resp.message = $"Team ID does not exist.";
 
                     return StatusCode(StatusCodes.Status404NotFound, Resp);
 
                 }
 
+            
+                string deleteRoleQuery = $"Delete from Team_Member_Mst where tmId='{tmId}'";
 
-                string deleteUserRoleQuery = $"Delete from User_Role_Mst where userRoleId='{userRoleId}'";
-
-                Connection.ExecuteNonQuery(deleteUserRoleQuery);
+                Connection.ExecuteNonQuery(deleteRoleQuery);
                 Resp.statusCode = StatusCodes.Status200OK;
-                Resp.message = "UserRole  Deleted successfully";
+                Resp.message = "Team  Deleted successfully";
                 Resp.isSuccess = true;
 
 
@@ -536,5 +520,4 @@ namespace Task_Management.Controllers
         }
 
     }
-
 }

@@ -2,7 +2,7 @@
 
 namespace Task_Management.Model
 {
-    public class WorkingStatusModel
+    public class WorkingModel
     {
         [JsonPropertyName("txnId")]
         public int? txnId { get; set; }

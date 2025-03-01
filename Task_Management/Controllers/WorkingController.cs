@@ -10,7 +10,7 @@ namespace Task_Management.Controllers
 {
     [Route("/[controller]")]
     [ApiController]
-    public class WorkingStatusController : ControllerBase
+    public class WorkingController : ControllerBase
     {
         Connection _Connection = new Connection();
         ApiResponse Resp = new ApiResponse();
@@ -20,7 +20,7 @@ namespace Task_Management.Controllers
         SqlQueryResult _query = new SqlQueryResult();
       
         [HttpGet]
-        [Route("GetWorkingStatus")]
+        [Route("GetWorking")]
         public IActionResult GetWorkingStatus()
         {
             try
@@ -41,10 +41,10 @@ namespace Task_Management.Controllers
                 }
 
 
-                var workingSatusList = new List<WorkingStatusModel>();
+                var workingSatusList = new List<WorkingModel>();
                 foreach (DataRow row in Table.Rows)
                 {
-                    workingSatusList.Add(new WorkingStatusModel
+                    workingSatusList.Add(new WorkingModel
                     {
                         txnId = Convert.ToInt32(row["txnId"]),
                         userId = Convert.ToInt32(row["userId"]),
@@ -82,7 +82,7 @@ namespace Task_Management.Controllers
         [HttpPost]
 
         [Route("AddWorkingStatus")]
-        public IActionResult AddWorkingStatus([FromBody] WorkingStatusModel workingSatatusModel)
+        public IActionResult AddWorkingStatus([FromBody] WorkingModel workingSatatusModel)
         {
             try
             {

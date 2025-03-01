@@ -7,7 +7,7 @@ namespace Task_Management.Classes
     public class Validation
     {
         
-            public string ConvertLetterCase(LetterCasePerameter letterCasePerameter)
+            public string ConvertLetterCase(LetterCasePerameter1 letterCasePerameter)
             {
                 if (string.IsNullOrEmpty(letterCasePerameter.column))
             {
@@ -51,7 +51,7 @@ namespace Task_Management.Classes
  
 
 
-    public class LetterCasePerameter
+    public class LetterCasePerameter1
     {
         public string caseType { get; set; }
         public string column { get; set; }

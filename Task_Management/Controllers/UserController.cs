@@ -21,7 +21,7 @@ namespace Task_Management.Controllers
         }
 
         ApiResponse Resp = new ApiResponse();
-        Validation validation = new Validation();
+      //  Validation validation = new Validation();
         EncryptDecrypt EncryptDecryptPassword = new EncryptDecrypt();
         Connection _Connection = new Connection();
         DataAccess _dc = new DataAccess();
@@ -35,7 +35,7 @@ namespace Task_Management.Controllers
             {
 
 
-                string query = $"SELECT    u.*,    r.roleId,    r.roleName FROM    User_Mst u LEFT JOIN     User_Role_Mst ur ON u.userId = ur.userId LEFT JOIN    Role_Mst r ON ur.roleId = r.roleId ORDER BY    u.userName ASC";
+                string query = $"SELECT    usr.*,    r.roleId,    r.roleName FROM    User_Mst usr LEFT JOIN     User_Role_Mst ur ON usr.userId = ur.userId LEFT JOIN    Role_Mst r ON ur.roleId = r.roleId ORDER BY    usr.userName ASC";
 
                 var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
@@ -179,12 +179,12 @@ namespace Task_Management.Controllers
                 string hashedPassword = EncryptDecryptPassword.Encrypt("ABC", user.userPassword);
 
                 string query = $@"
-            SELECT U.*, R.roleId, R.roleName 
-            FROM User_Mst U
+            SELECT usr.*, R.roleId, R.roleName 
+            FROM User_Mst usr
             JOIN User_Role_Mst UR ON U.userId = UR.userId
             JOIN Role_Mst R ON UR.roleId = R.roleId
-            WHERE U.userEmail = '{user.userEmail}' 
-              AND U.userPassword = '{hashedPassword}' 
+            WHERE usr.userEmail = '{user.userEmail}' 
+              AND usr.userPassword = '{hashedPassword}' 
               AND R.roleId = '{user.roleId}'";
 
                 var result = _Connection.bindmethod(query);
@@ -272,14 +272,14 @@ namespace Task_Management.Controllers
                     user.userPassword = hashedPassword;
 
                 }
-                user.userName = validation.ConvertLetterCase(new LetterCasePerameter
+                user.userName = _dc.ConvertLetterCase(new LetterCasePerameter
                 {
                     caseType = "titlecase",
                     column = user.userName
                 });
               //  insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
 
-                if (validation.CheckNullValues(user.userName)|| validation.CheckNullValues(user.userEmail)|| validation.CheckNullValues(user.userPassword))
+                if (_dc.CheckNullValues(user.userName)|| _dc.CheckNullValues(user.userEmail)|| _dc.CheckNullValues(user.userPassword))
                 {
                     Resp.statusCode = StatusCodes.Status204NoContent;
                     Resp.message = $"User Email ,Name,Password can't be blank ";
@@ -287,7 +287,7 @@ namespace Task_Management.Controllers
                     return StatusCode(StatusCodes.Status204NoContent, Resp);
 
                 }
-                if (!validation.CheckNullValues(user.userId.ToString()) && user.userId > 0 && user.updateFlag == true)
+                if (!_dc.CheckNullValues(user.userId.ToString()) && user.userId > 0 && user.updateFlag == true)
                 {
                     var userExistsQuery = $"SELECT COUNT(*) FROM User_Mst WHERE userId = {user.userId}";
                     int userExists =
