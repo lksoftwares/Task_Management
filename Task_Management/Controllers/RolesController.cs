@@ -89,8 +89,9 @@ namespace Task_Management.Controllers
 
         }
         [HttpPost]
+        [Route("AddRole")]
 
-        [Route("AddEditRole")]
+        [Route("EditRole")]
         public IActionResult AddEditRole([FromBody] RolesModel role)
         {
             try

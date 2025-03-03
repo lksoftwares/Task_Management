@@ -13,7 +13,6 @@ namespace Task_Management.Controllers
     {
         Connection _Connection = new Connection();
         ApiResponse Resp = new ApiResponse();
-       // Validation validation = new Validation();
 
         DataAccess _dataAccess = new DataAccess();
         SqlQueryResult _query = new SqlQueryResult();

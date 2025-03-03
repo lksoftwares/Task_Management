@@ -277,7 +277,7 @@ namespace Task_Management.Controllers
                     caseType = "titlecase",
                     column = user.userName
                 });
-              //  insertupdateTestclass insertupdateTestclass = new insertupdateTestclass();
+       
 
                 if (_dc.CheckNullValues(user.userName)|| _dc.CheckNullValues(user.userEmail)|| _dc.CheckNullValues(user.userPassword))
                 {
@@ -372,9 +372,6 @@ namespace Task_Management.Controllers
                 Resp.isSuccess = true;
 
                 return StatusCode(StatusCodes.Status200OK, Resp);
-
-
-
 
             }
             catch (Exception ex)
