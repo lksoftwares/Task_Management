@@ -44,6 +44,11 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<ConnectionClass>();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedForHeaderName = "X-Coming-From";
+});
+builder.Services.AddHttpContextAccessor();
 
 var app = builder.Build();
 app.UseCors("FlutterConnection");
@@ -63,6 +68,7 @@ Connection.Connect();
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseAuthentication();
+app.UseForwardedHeaders();
 
 app.UseAuthorization();
 app.MapControllers();

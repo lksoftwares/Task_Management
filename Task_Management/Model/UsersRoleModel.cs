@@ -32,6 +32,7 @@ namespace Task_Management.Model
         public List<userRoleData> ? userRoles { get; set; }
         [JsonPropertyName("userRoleId")]
         public int? userRoleId { get; set; }
+        public string? deviceId { get; set; }
 
     }
     public class userRoleData

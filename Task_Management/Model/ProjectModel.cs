@@ -34,6 +34,10 @@ namespace Task_Management.Model
         [JsonPropertyName("updatedAt")]
         public string? updatedAt { get; set; }
         public bool? updateFlag { get; set; }
+        public string? createdByUserName { get; set; }
+        public string? updateByUserName { get; set; }
+
+
 
     }
 }

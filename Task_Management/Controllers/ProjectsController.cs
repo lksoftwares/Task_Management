@@ -20,12 +20,25 @@ namespace Task_Management.Controllers
         {
             try
             {
-                string query = $"select * from Project_Mst where projectStatus = 1  ";
+                string query = @"SELECT  
+  prj.*,
+    createdUser.userName AS createdByUserName,
+    updatedUser.userName AS updatedByUserName
+FROM 
+    Project_Mst prj
+LEFT JOIN 
+    User_Mst createdUser 
+    ON prj.createdBy = createdUser.userId
+LEFT JOIN 
+    User_Mst updatedUser 
+    ON prj.updatedBy = updatedUser.userId;
+  ";
 
             
 
                 var result = _Connection.bindmethod(query);
                 DataTable Table = result._DataTable;
+
                 if (Table == null)
                 {
                     Resp.statusCode = StatusCodes.Status200OK;
@@ -45,12 +58,18 @@ namespace Task_Management.Controllers
 
                         projectId = Convert.ToInt32(row["projectId"]),
                         projectName = row["projectName"].ToString(),
+                        createdByUserName = row["createdByUserName"].ToString(),
+                        updateByUserName = row["updatedByUserName"].ToString(),
                         createdBy = Convert.ToInt32(row["createdBy"]),
                         updatedBy = Convert.ToInt32(row["updatedBy"]),
                         projectDescription = row["projectDescription"].ToString(),
                         projectStatus = Convert.ToBoolean(row["projectStatus"]),
+                        startDate = Convert.ToDateTime(row["startDate"]).ToString("yyyy-MM-dd"),
+                        endDate = Convert.ToDateTime(row["endDate"]).ToString("yyyy-MM-dd"),
+
                         createdAt = Convert.ToDateTime(row["createdAt"]).ToString("dd-MM-yyyy HH:mm:ss"),
                         updatedAt = Convert.ToDateTime(row["updatedAt"]).ToString("dd-MM-yyyy HH:mm:ss")
+
 
 
 

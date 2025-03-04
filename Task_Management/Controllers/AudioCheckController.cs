@@ -5,6 +5,10 @@ using Microsoft.Data.SqlClient;
 using System.Data;
 using System.Data.Common;
 using Task_Management.Model;
+using System.Web;
+using System.Net;
+using System.Net.Sockets;
+
 
 namespace Task_Management.Controllers
 {
@@ -13,6 +17,8 @@ namespace Task_Management.Controllers
 
     public class AudioCheckController : ControllerBase
     {
+        private readonly IHttpContextAccessor httpContextAccessor;
+
         private SqlConnection _connection;
 
 
@@ -20,9 +26,14 @@ namespace Task_Management.Controllers
         ApiResponse Resp = new ApiResponse();
         DataAccess _dataAccess = new DataAccess();
         SqlQueryResult _query = new SqlQueryResult();
+        public AudioCheckController(IHttpContextAccessor httpContextAccessor)
+        {
+            this.httpContextAccessor = httpContextAccessor;
+
+        }
         [HttpPost]
         [Route("AddAudio")]
-        public async Task<IActionResult> AddEditTeamMember([FromForm] audiomodel audio)
+        public async Task<IActionResult> AddAudio([FromForm] audiomodel audio)
         {
             try
             {
@@ -32,7 +43,7 @@ namespace Task_Management.Controllers
                     using (var ms = new MemoryStream())
                     {
                         await audio.AudioFile.CopyToAsync(ms);
-                       audio.AudioData= ms.ToArray();
+                        audio.AudioData = ms.ToArray();
 
                         //  Console.WriteLine($"jkhi: {Convert.ToBase64String(fileBytes)}");
 
@@ -140,6 +151,137 @@ namespace Task_Management.Controllers
             }
         }
 
+
+
+        [HttpPost]
+        [Route("SaveAudio")]
+        public async Task<IActionResult> SaveAudio([FromForm] audiomodel audio)
+        {
+            try
+            {
+
+                //if (!Directory.Exists("D:\\vs2022Repos\\Task_Management\\Task_Management\\savefiles"))
+                //    Directory.CreateDirectory("D:\\vs2022Repos\\Task_Management\\Task_Management\\savefiles");
+
+                //string fileName = Guid.NewGuid().ToString() + Path.GetExtension(audio.AudioFile.FileName);
+                //string filePath = Path.Combine("D:\\vs2022Repos\\Task_Management\\Task_Management\\savefiles\\", fileName);
+
+                //using (var stream = new FileStream(filePath, FileMode.Create))
+                //{
+                //    await audio.AudioFile.CopyToAsync(stream);
+                //}
+                string savedFileName = DataAccess.SaveImage("D:\\vs2022Repos\\Task_Management\\Task_Management\\savefiles\\", audio.AudioFile);
+
+
+                var audioData = new audiomodel
+                {
+                    AudioName = audio.AudioName,
+                    AudioPath = savedFileName
+                };
+
+                var queryResult = _dataAccess.InsertOrUpdateEntity(new InsertUpdatePerameters
+                {
+                    entity = audioData,
+                    tableName = "Audio_Mst1",
+                    imgFolderpath = "D:\\vs2022Repos\\Task_Management\\Task_Management\\savefiles\\"
+                });
+
+
+
+                if (_query.QueryErrorMessage != null)
+                {
+                    Resp.message = _query.QueryErrorMessage;
+                }
+                else
+                {
+                    Resp.message = $"Audio Added Successfully";
+                }
+
+
+                Resp.statusCode = StatusCodes.Status200OK;
+
+                Resp.isSuccess = true;
+
+                return StatusCode(StatusCodes.Status200OK, Resp);
+
+            }
+            catch (Exception ex)
+            {
+
+                Resp.statusCode = StatusCodes.Status500InternalServerError;
+                Resp.message = ex.Message;
+
+
+                return StatusCode(StatusCodes.Status500InternalServerError, Resp);
+            }
+        }
+        [HttpGet]
+        [Route("getip")]
+        public IActionResult GetIP()
+        {
+            string ip = Dns.GetHostEntry(Dns.GetHostName())
+                   .AddressList
+                   .FirstOrDefault(ip => ip.AddressFamily == AddressFamily.InterNetwork)?
+                   .ToString();
+
+            return Ok($"IP Address is: {ip}");
+            //string hostName = Dns.GetHostName();
+            //Console.WriteLine("Host Name: " + hostName);
+
+            //var ipAddresses = Dns.GetHostEntry(hostName).AddressList;
+
+            //string ip = ipAddresses
+            //            .Where(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+            //            .FirstOrDefault()?.ToString();
+
+            //if (string.IsNullOrEmpty(ip))
+            //{
+            //    ip = ipAddresses
+            //            .Where(ip => ip.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+            //            .FirstOrDefault()?.ToString();
+            //}
+
+            //Console.WriteLine("IP Address is: " + ip);
+            //return Ok("IP Address is: " + ip);
+        }
+
+        //[HttpGet]
+        //[Route("getip")]
+        //public IActionResult GetIP()
+        //{
+        //    string hostName = Dns.GetHostName();
+        //    Console.WriteLine(hostName);
+
+        //    // Get the IP from GetHostByName method of dns class. 
+        //    string IP = Dns.GetHostByName(hostName).AddressList[0].ToString();
+        //    Console.WriteLine("IP Address is : " + IP);
+        //    return Ok("IP Address is : " + IP);
+        //    // var clientIp = HttpContext.Connection.RemoteIpAddress;
+        //    //var remoteIpAddress = HttpContext.Connection.RemoteIpAddress?.ToString();
+
+        //    //if (HttpContext.Request.Headers.ContainsKey("X-Forwarded-For"))
+        //    //{
+        //    //    var forwardedIp = HttpContext.Request.Headers["X-Forwarded-For"].ToString();
+        //    //    var ipList = forwardedIp.Split(',');
+        //    //    remoteIpAddress = ipList[0]; 
+        //    //}
+        //    // string userRequest = System.Web.HttpContext.Current.Request.UserHostAddress;
+
+        //    //   var ip = httpContextAccessor.HttpContext?.Request.Headers["X-Forwarded-For"].ToString();
+        //    //  string ip = HttpContext.Request.Headers["X-Forwarded-For"].FirstOrDefault()
+        //    //  ?? HttpContext.Connection.RemoteIpAddress?.ToString();
+        //    //   var hostName = Dns.GetHostName();
+        //    //var ip =   Dns.GetHostByName(hostName).AddressList[0].ToString();
+        //    //   return Ok(new { ip = ip});
+
+        //    //return Ok(remoteIpAddress);
+
+
+        //}
+
+
+
+
     }
     public class audiomodel
     {
@@ -147,5 +289,6 @@ namespace Task_Management.Controllers
         public string? AudioName { get; set; }
         public byte[]? AudioData { get; set; }
         public IFormFile? AudioFile { get; set; }
+        public string? AudioPath { get; set; }
     }
 }
